@@ -9,6 +9,10 @@ const base = repoName ? `/${repoName}/` : '/';
 
 export default defineConfig({
   base,
+  server: {
+    port: process.env.PORT ? parseInt(process.env.PORT) : undefined,
+    strictPort: false,
+  },
   plugins: [
     react(),
     VitePWA({
