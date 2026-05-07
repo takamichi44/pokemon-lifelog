@@ -64,6 +64,14 @@ export const POKEMON_NAMES: Record<number, string> = {
   238: 'ムチュール',
   239: 'エレキッド',
   240: 'ブビィ',
+  // ドラゴン系
+  147: 'ミニリュウ',
+  148: 'ハクリュー',
+  149: 'カイリュー',
+  // 擬似伝説
+  246: 'ヨーギラス',
+  247: 'サナギラス',
+  248: 'バンギラス',
 };
 
 export function getPokemonName(id: number): string {

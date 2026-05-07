@@ -1,7 +1,9 @@
 import type { ActivityCategory, AttributeType, PokemonSlot } from '../types';
 import { getPokemonName } from '../data/pokemonNames';
+import { getSpeechTic } from '../data/pokemonSpeechTics';
 
 export interface ClassificationResult {
+  type: 'activity' | 'conversation';
   attribute: AttributeType;
   category: ActivityCategory;
 }
@@ -11,13 +13,12 @@ export interface ChatMessage {
   text: string;
 }
 
-// 試すモデルの優先順位（このAPIキーで存在するモデルのみ）
-// ※ gemini-1.5-flash 系はこのキーでは利用不可 (404) のため除外
+// 試すモデルの優先順位
 const GEMINI_MODEL_CANDIDATES = [
-  'gemini-2.0-flash-lite',   // 最軽量・クォータ消費が少ない
-  'gemini-2.0-flash',        // 標準
-  'gemini-2.5-flash-lite',   // 新世代 lite
-  'gemini-2.5-flash',        // 新世代標準
+  'gemini-2.0-flash-lite',
+  'gemini-2.0-flash',
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-flash',
 ];
 
 const GEMINI_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -47,27 +48,14 @@ async function callGemini(body: object): Promise<string> {
 
     const errText = await response.text();
 
-    // 404 → モデルが存在しない → 次を試す
-    if (response.status === 404) {
-      errors.push(`${model}: not found`);
-      continue;
-    }
-
-    // 429 → クォータ/レート超過 → 次のモデルを試す
+    if (response.status === 404) { errors.push(`${model}: not found`); continue; }
     if (response.status === 429) {
-      // limit: 0 は課金済みプロジェクトで無料枠が無効になっている特殊ケース
       const isZeroQuota = errText.includes('limit: 0');
       errors.push(`${model}: ${isZeroQuota ? 'free-tier quota=0 (billing project)' : 'rate limit'}`);
       continue;
     }
+    if (response.status === 503) { errors.push(`${model}: service unavailable`); continue; }
 
-    // 503 → 高負荷で一時的に利用不可 → 次のモデルを試す
-    if (response.status === 503) {
-      errors.push(`${model}: service unavailable`);
-      continue;
-    }
-
-    // それ以外 (400/403/500 等) は即 throw
     throw new Error(`Gemini API エラー (${response.status}) [${model}]: ${errText}`);
   }
 
@@ -82,20 +70,30 @@ async function callGemini(body: object): Promise<string> {
   throw new Error(`Gemini APIが利用できません。\n${errors.map((e) => `  • ${e}`).join('\n')}\n${hint}`);
 }
 
-// ===== 活動分類 =====
+// ===== 活動分類 + 会話判定 =====
 
-const CLASSIFY_SYSTEM_PROMPT = `あなたは活動分類アシスタントです。ユーザーが入力した活動テキストを分析し、以下の形式でJSONのみを返してください。
+const CLASSIFY_SYSTEM_PROMPT = `あなたは活動分類アシスタントです。ユーザーの入力が「活動報告」か「ただの会話」かを判定し、JSONのみを返してください。
 
-分類ルール:
-- attribute: "physical"（運動・体を使う活動）| "smart"（学習・知的作業）| "mental"（感情・内省・創作）| "life"（食事・睡眠・人間関係・趣味）
-- category: "effort"（意識的な努力が必要な活動: 英語学習、ジム、コーディング等）| "daily"（日常的な活動: 仕事、家事、育児等）
+判定ルール:
+- 活動報告: 「〜した」「〜やった」「〜行った」など、何か行動・出来事を報告している
+- ただの会話: 挨拶、質問、雑談、感情表現など、活動報告でないもの
 
-返答形式（JSONのみ、説明不要）:
-{"attribute":"physical","category":"effort"}`;
+活動報告の場合:
+- type: "activity"
+- attribute: "physical"（運動・体）| "smart"（学習・知的）| "mental"（感情・創作）| "life"（食事・睡眠・日常）
+- category: "effort"（意識的な努力: 英語学習、ジム等）| "daily"（日常活動: 仕事、家事等）
+
+会話の場合:
+- type: "conversation"
+- attribute と category は "life" / "daily" を入れる（無視される）
+
+返答形式（JSONのみ）:
+活動例: {"type":"activity","attribute":"physical","category":"effort"}
+会話例: {"type":"conversation","attribute":"life","category":"daily"}`;
 
 export async function classifyActivity(text: string): Promise<ClassificationResult> {
   const rawText = await callGemini({
-    contents: [{ parts: [{ text: CLASSIFY_SYSTEM_PROMPT }, { text: `活動: ${text}` }] }],
+    contents: [{ parts: [{ text: CLASSIFY_SYSTEM_PROMPT }, { text: `入力: ${text}` }] }],
     generationConfig: { temperature: 0.1, maxOutputTokens: 64 },
   });
 
@@ -103,16 +101,29 @@ export async function classifyActivity(text: string): Promise<ClassificationResu
   if (!match) throw new Error(`Gemini の応答をパースできませんでした: ${rawText}`);
 
   const parsed = JSON.parse(match[0]) as ClassificationResult;
+  if (parsed.type === 'conversation') return parsed;
+
   const validAttributes: AttributeType[] = ['physical', 'smart', 'mental', 'life'];
   const validCategories: ActivityCategory[] = ['effort', 'daily'];
-
   if (!validAttributes.includes(parsed.attribute) || !validCategories.includes(parsed.category)) {
     throw new Error(`不正な分類結果: ${match[0]}`);
   }
   return parsed;
 }
 
-// ===== 活動への反応（褒め・応援） =====
+// ===== 語尾ルール =====
+function getSpeechTicRule(pokemonId: number): string {
+  const tic = getSpeechTic(pokemonId);
+  return `- 文末に「〜${tic}」という語尾をつける（例: 「すごい${tic}！」「頑張って${tic}ね」）`;
+}
+
+// ===== 性格マップ =====
+const PERSONALITY_MAP: Record<string, string> = {
+  physical: '元気で活発、体を動かすことが大好き。熱血でストレートな話し方をする。',
+  smart:    '知的で冷静、物事を論理的に考える。少し難しい言葉を使うこともある。',
+  mental:   '感受性が豊かで繊細。感情豊かに話し、共感を大切にする。',
+  life:     '穏やかで優しい。トレーナーをいつも気にかけており、日常の細かいことに喜びを感じる。',
+};
 
 const ATTR_LABEL_MAP: Record<AttributeType, string> = {
   physical: 'フィジカル（体・運動系）',
@@ -121,12 +132,14 @@ const ATTR_LABEL_MAP: Record<AttributeType, string> = {
   life:     'ライフ（生活・日常系）',
 };
 
-const PERSONALITY_MAP: Record<string, string> = {
-  physical: '元気で活発、体を動かすことが大好き。熱血でストレートな話し方をする。',
-  smart:    '知的で冷静、物事を論理的に考える。少し難しい言葉を使うこともある。',
-  mental:   '感受性が豊かで繊細。感情豊かに話し、共感を大切にする。',
-  life:     '穏やかで優しい。トレーナーをいつも気にかけており、日常の細かいことに喜びを感じる。',
-};
+function getDominant(slot: PokemonSlot): string {
+  const { physical, smart, mental, life } = slot.dp;
+  return (
+    [['physical', physical], ['smart', smart], ['mental', mental], ['life', life]] as [string, number][]
+  ).sort((a, b) => b[1] - a[1])[0][0];
+}
+
+// ===== 活動への反応（褒め・応援） =====
 
 export async function respondToActivity(
   slot: PokemonSlot,
@@ -135,10 +148,7 @@ export async function respondToActivity(
   category: ActivityCategory,
 ): Promise<string> {
   const name = getPokemonName(slot.pokemonId ?? 0);
-  const { physical, smart, mental, life } = slot.dp;
-  const dominant = (
-    [['physical', physical], ['smart', smart], ['mental', mental], ['life', life]] as [string, number][]
-  ).sort((a, b) => b[1] - a[1])[0][0];
+  const dominant = getDominant(slot);
 
   const categoryDesc =
     category === 'effort'
@@ -166,7 +176,8 @@ ${PERSONALITY_MAP[dominant] ?? PERSONALITY_MAP.life}
 - 2〜3文程度の短い返答
 - 一人称は「ぼく」または「わたし」（性格に合わせて）
 - 自分の名前（${name}）は使わない
-- ポケモンらしい純粋さと愛情を込める`;
+- ポケモンらしい純粋さと愛情を込める
+${getSpeechTicRule(slot.pokemonId ?? 0)}`;
 
   return callGemini({
     contents: [{ parts: [{ text: prompt }] }],
@@ -174,14 +185,47 @@ ${PERSONALITY_MAP[dominant] ?? PERSONALITY_MAP.life}
   });
 }
 
-// ===== ポケモン会話 =====
+// ===== 雑談への返答（DP付与なし） =====
+
+export async function respondToConversation(
+  slot: PokemonSlot,
+  userMessage: string,
+): Promise<string> {
+  const name = getPokemonName(slot.pokemonId ?? 0);
+  const dominant = getDominant(slot);
+  const { physical, smart, mental, life } = slot.dp;
+
+  const prompt = `あなたはポケモン「${name}」です。トレーナーから話しかけられました。
+
+【トレーナーのメッセージ】
+「${userMessage}」
+
+【あなたのステータス】
+フィジカル: ${Math.floor(physical)} / スマート: ${Math.floor(smart)} / メンタル: ${Math.floor(mental)} / ライフ: ${Math.floor(life)}
+
+【あなたの性格】
+${PERSONALITY_MAP[dominant] ?? PERSONALITY_MAP.life}
+
+【返答のルール】
+- 自然に会話する（活動報告への反応ではなく、雑談として）
+- 2〜3文程度の短い返答
+- 一人称は「ぼく」または「わたし」（性格に合わせて）
+- 自分の名前（${name}）は使わない
+- ポケモンらしい純粋さと愛情を込める
+${getSpeechTicRule(slot.pokemonId ?? 0)}`;
+
+  return callGemini({
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: { temperature: 0.9, maxOutputTokens: 150 },
+  });
+}
+
+// ===== ポケモン会話（履歴付き） =====
 
 function buildPokemonSystemPrompt(slot: PokemonSlot): string {
   const name = getPokemonName(slot.pokemonId ?? 0);
+  const dominant = getDominant(slot);
   const { physical, smart, mental, life } = slot.dp;
-  const dominant = (
-    [['physical', physical], ['smart', smart], ['mental', mental], ['life', life]] as [string, number][]
-  ).sort((a, b) => b[1] - a[1])[0][0];
 
   const personality: Record<string, string> = {
     physical: '元気で活発、体を動かすことが大好き。少し熱血でストレートな話し方をする。',
@@ -205,7 +249,8 @@ ${personality[dominant] ?? personality.life}
 - 自分のステータスや日々の活動、進化への思いを自然に織り交ぜて話す
 - トレーナーへの愛情・信頼を表現する
 - 2〜4文程度の短い返答にする
-- ポケモンらしい純粋さを忘れない`;
+- ポケモンらしい純粋さを忘れない
+${getSpeechTicRule(slot.pokemonId ?? 0)}`;
 }
 
 export async function chatWithPokemon(
@@ -215,7 +260,6 @@ export async function chatWithPokemon(
 ): Promise<string> {
   const systemPrompt = buildPokemonSystemPrompt(slot);
 
-  // Gemini multi-turn形式に変換
   const contents = [
     { role: 'user', parts: [{ text: systemPrompt }] },
     { role: 'model', parts: [{ text: `わかりました！${getPokemonName(slot.pokemonId ?? 0)}として話しますね。` }] },

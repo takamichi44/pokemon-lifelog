@@ -515,5 +515,58 @@ export function usePokemonEngine() {
     setState((prev) => ({ ...prev, decayRate: rate }));
   }, []);
 
-  return { state, addActivity, allocateFromPool, claimChallengeReward, resetGame, setDecayRate };
+  /** 開発者モード: 任意DPを直接付与 */
+  const grantDp = useCallback(
+    (targetSlotId: number | 'pool', attribute: AttributeType | 'all', amount: number) => {
+      const now = Date.now();
+      setState((prev) => {
+        const attrs: AttributeType[] = attribute === 'all'
+          ? ['physical', 'smart', 'mental', 'life']
+          : [attribute];
+
+        if (targetSlotId === 'pool') {
+          const newPool = { ...prev.dpPool };
+          for (const a of attrs) newPool[a] += amount;
+          return { ...prev, dpPool: newPool };
+        }
+
+        let newCaught = [...(prev.caughtPokemon ?? [])];
+        let newHatches = prev.totalHatches ?? 0;
+        let newEvolutions = prev.totalEvolutions ?? 0;
+
+        const newParty = prev.party.map((slot) => {
+          if (slot.slotId !== targetSlotId) return slot;
+          const prevId = slot.pokemonId;
+          const wasEgg = slot.isEgg;
+          const newDp = { ...slot.dp };
+          let totalAdd = 0;
+          for (const a of attrs) { newDp[a] += amount; totalAdd += amount; }
+          const updated: PokemonSlot = {
+            ...slot,
+            dp: newDp,
+            totalDpEver: slot.totalDpEver + totalAdd,
+            lastUpdatedAt: now,
+          };
+          const evolved = checkEvolution(updated, now);
+          if (evolved.pokemonId !== null && evolved.pokemonId !== 0 && evolved.pokemonId !== prevId) {
+            newCaught = addCaught(newCaught, evolved.pokemonId);
+            if (wasEgg) newHatches++;
+            else newEvolutions++;
+          }
+          return evolved;
+        });
+
+        return {
+          ...prev,
+          party: newParty,
+          caughtPokemon: newCaught,
+          totalHatches: newHatches,
+          totalEvolutions: newEvolutions,
+        };
+      });
+    },
+    [],
+  );
+
+  return { state, addActivity, allocateFromPool, claimChallengeReward, resetGame, setDecayRate, grantDp };
 }

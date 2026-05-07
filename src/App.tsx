@@ -8,7 +8,7 @@ import type { AttributeType, ActivityCategory } from './types';
 import './App.css';
 
 export default function App() {
-  const { state, addActivity, allocateFromPool, claimChallengeReward, resetGame, setDecayRate } = usePokemonEngine();
+  const { state, addActivity, allocateFromPool, claimChallengeReward, resetGame, setDecayRate, grantDp } = usePokemonEngine();
   const [tab, setTab] = useState<TabId>('party');
 
   const hasPoolDp = Object.values(state.dpPool).some((v) => v > 0);
@@ -48,6 +48,7 @@ export default function App() {
             onReset={resetGame}
             onDecayRateChange={setDecayRate}
             onClaimReward={claimChallengeReward}
+            onGrantDp={grantDp}
           />
         )}
       </main>

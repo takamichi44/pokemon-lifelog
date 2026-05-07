@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import type { PokemonSlot, AttributeType, ActivityCategory, GameState } from '../types';
 import { ATTRIBUTE_COLORS, ATTRIBUTE_LABELS, CATEGORY_LABELS, CATEGORY_COEFFICIENTS } from '../types';
 import { getPokemonName } from '../data/pokemonNames';
-import { classifyActivity, respondToActivity } from '../services/geminiService';
+import { classifyActivity, respondToActivity, respondToConversation } from '../services/geminiService';
 import { animatedSpriteUrl, onSpriteError } from '../utils/spriteUrl';
 import { getStreakMultiplier } from '../hooks/usePokemonEngine';
 import { getChallengeDefinition } from '../data/weeklyChallenges';
@@ -90,6 +90,21 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward }: Props
 
       if (useAi) {
         const result = await classifyActivity(text);
+
+        // 雑談判定：DP付与せずポケモンが返答するだけ
+        if (result.type === 'conversation') {
+          if (!isEgg && slot.pokemonId) {
+            response = await respondToConversation(slot, text);
+          } else {
+            response = '🥚 ……（タマゴがかすかに揺れている）';
+          }
+          // チャット履歴に「会話」として追加（DP=0）
+          onAddActivity(text, 'life', 'daily', null, response);
+          setInput('');
+          inputRef.current?.focus();
+          return;
+        }
+
         finalAttr = result.attribute;
         finalCat = result.category;
 

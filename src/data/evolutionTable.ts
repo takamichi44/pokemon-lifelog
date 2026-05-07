@@ -202,6 +202,26 @@ export const EVOLUTION_TABLE: EvolutionEntry[] = [
     pokemonId: 159,
     evolvesTo: [{ targetId: 160, conditions: { minPhysical: 80, minLife: 50 } }],
   },
+  // ミニリュウ → ハクリュー（高なつき度・バランス型）
+  {
+    pokemonId: 147,
+    evolvesTo: [{ targetId: 148, conditions: { minPhysical: 40, minSmart: 40, minLife: 30, minAffection: 80 } }],
+  },
+  // ハクリュー → カイリュー（全能型）
+  {
+    pokemonId: 148,
+    evolvesTo: [{ targetId: 149, conditions: { minPhysical: 80, minSmart: 60, minMental: 40, minLife: 60 } }],
+  },
+  // ヨーギラス → サナギラス（物理特化）
+  {
+    pokemonId: 246,
+    evolvesTo: [{ targetId: 247, conditions: { minPhysical: 60, minMental: 30 } }],
+  },
+  // サナギラス → バンギラス（最強クラス・高難度）
+  {
+    pokemonId: 247,
+    evolvesTo: [{ targetId: 248, conditions: { minPhysical: 100, minSmart: 40, minMental: 60 } }],
+  },
 ];
 
 export function getEvolutionEntry(pokemonId: number): EvolutionEntry | undefined {

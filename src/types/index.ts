@@ -107,10 +107,11 @@ export const TP_SLOT_THRESHOLDS = [0, 100, 300, 600, 1000, 1500];
 export const DEFAULT_DECAY_RATE = 0.2;
 
 export const HATCH_POOL: number[] = [
-  172, 173, 174, 175, // Pichu, Cleffa, Igglybuff, Togepi
-  236, 238, 239, 240, // Tyrogue, Smoochum, Elekid, Magby
-  228, 198, 200,      // Houndour, Murkrow, Misdreavus
-  179, 187, 194, 216, // Mareep, Hoppip, Wooper, Teddiursa
-  220, 231, 223, 218, 209, // Swinub, Phanpy, Remoraid, Slugma, Snubbull
-  1, 4, 7, 152, 155, 158,  // Bulbasaur, Charmander, Squirtle, Chikorita, Cyndaquil, Totodile
+  172, 173, 174, 175, // ピチュー, ピィ, ププリン, トゲピー
+  236, 238, 239, 240, // バルキー, ムチュール, エレキッド, ブビィ
+  228,                // デルビル（ヤミカラス・ムウマは進化なしのため除外）
+  179, 187, 194, 216, // メリープ, ハネッコ, ウパー, ヒメグマ
+  220, 231, 223, 218, 209, // イノプー, ゴマゾウ, テッポウオ, マグマッグ, ブルー
+  147, 246,           // ミニリュウ, ヨーギラス（強力な進化ライン）
+  1, 4, 7, 152, 155, 158,  // フシギダネ, ヒトカゲ, ゼニガメ, チコリータ, ヒノアラシ, ワニノコ
 ];

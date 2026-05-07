@@ -1,5 +1,6 @@
-import type { GameState } from '../types';
-import { TP_SLOT_THRESHOLDS } from '../types';
+import { useState } from 'react';
+import type { GameState, AttributeType } from '../types';
+import { TP_SLOT_THRESHOLDS, ATTRIBUTE_LABELS } from '../types';
 import { TrainerRankCard } from './TrainerRankCard';
 import { BadgeGrid } from './BadgeGrid';
 import { WeeklyChallengeCard } from './WeeklyChallengeCard';
@@ -9,6 +10,7 @@ interface Props {
   onReset: () => void;
   onDecayRateChange: (rate: number) => void;
   onClaimReward: () => void;
+  onGrantDp: (targetSlotId: number | 'pool', attribute: AttributeType | 'all', amount: number) => void;
 }
 
 const DECAY_OPTIONS = [
@@ -18,8 +20,28 @@ const DECAY_OPTIONS = [
   { label: '厳しい (50%/日)', value: 0.5 },
 ];
 
-export function TrainerView({ state, onReset, onDecayRateChange, onClaimReward }: Props) {
+const ATTR_OPTIONS: { label: string; value: AttributeType | 'all' }[] = [
+  { label: '全属性', value: 'all' },
+  { label: ATTRIBUTE_LABELS.physical, value: 'physical' },
+  { label: ATTRIBUTE_LABELS.smart,    value: 'smart' },
+  { label: ATTRIBUTE_LABELS.mental,   value: 'mental' },
+  { label: ATTRIBUTE_LABELS.life,     value: 'life' },
+];
+
+export function TrainerView({ state, onReset, onDecayRateChange, onClaimReward, onGrantDp }: Props) {
   const { totalTp, unlockedSlots, decayRate, totalActivityCount, totalEffortCount, totalHatches, totalEvolutions, unlockedBadges } = state;
+
+  // 開発者モード
+  const [devMode, setDevMode] = useState(false);
+  const [devTarget, setDevTarget] = useState<string>('0');
+  const [devAttr, setDevAttr]     = useState<AttributeType | 'all'>('all');
+  const [devAmount, setDevAmount] = useState(50);
+
+  function handleGrant() {
+    const target = devTarget === 'pool' ? 'pool' : parseInt(devTarget);
+    if (typeof target === 'number' && isNaN(target)) return;
+    onGrantDp(target as number | 'pool', devAttr, devAmount);
+  }
 
   return (
     <div className="trainer-view">
@@ -110,6 +132,63 @@ export function TrainerView({ state, onReset, onDecayRateChange, onClaimReward }
         <div className="trainer-setting-hint">
           アプリを閉じている間、ポケモンのDPが自動で減少します
         </div>
+      </section>
+
+      {/* 開発者モード */}
+      <section className="trainer-section">
+        <div className="trainer-section__title">
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={devMode}
+              onChange={(e) => setDevMode(e.target.checked)}
+            />
+            🛠️ 開発者モード
+          </label>
+        </div>
+        {devMode && (
+          <div className="dev-panel">
+            <div className="dev-panel__row">
+              <label className="dev-panel__label">対象スロット</label>
+              <select
+                className="trainer-setting-select"
+                value={devTarget}
+                onChange={(e) => setDevTarget(e.target.value)}
+              >
+                {state.party.slice(0, unlockedSlots).map((_slot, i) => (
+                  <option key={i} value={String(i)}>スロット {i + 1}</option>
+                ))}
+                <option value="pool">📦 DPプール</option>
+              </select>
+            </div>
+            <div className="dev-panel__row">
+              <label className="dev-panel__label">属性</label>
+              <select
+                className="trainer-setting-select"
+                value={devAttr}
+                onChange={(e) => setDevAttr(e.target.value as AttributeType | 'all')}
+              >
+                {ATTR_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="dev-panel__row">
+              <label className="dev-panel__label">付与DP</label>
+              <input
+                type="number"
+                className="dev-panel__input"
+                min={1}
+                max={9999}
+                value={devAmount}
+                onChange={(e) => setDevAmount(Math.max(1, parseInt(e.target.value) || 1))}
+              />
+            </div>
+            <button className="dev-panel__btn" onClick={handleGrant}>
+              ✨ DP付与
+            </button>
+          </div>
+        )}
       </section>
 
       {/* リセット */}

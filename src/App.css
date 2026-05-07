@@ -777,6 +777,56 @@ html, body, #root {
   min-height: 48px;
 }
 
+/* ===== 開発者パネル ===== */
+.dev-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #1a1a3e;
+  border: 1px dashed #7c3aed;
+  border-radius: 8px;
+  padding: 12px;
+  margin-top: 8px;
+}
+
+.dev-panel__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dev-panel__label {
+  font-size: 12px;
+  color: #a78bfa;
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.dev-panel__input {
+  flex: 1;
+  background: #16162a;
+  border: 1px solid #7c3aed;
+  color: #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 14px;
+  min-height: 36px;
+}
+
+.dev-panel__btn {
+  background: #7c3aed;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 44px;
+  font-weight: bold;
+}
+
+.dev-panel__btn:active { opacity: 0.8; }
+
 /* ===== Pokemon Card アクションボタン ===== */
 .pokemon-card__actions {
   display: flex;
