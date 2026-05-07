@@ -1,8 +1,12 @@
-import { useState } from 'react';
-import { ALL_GAME_POKEMON_IDS } from '../data/allGamePokemon';
-import { getPokemonName } from '../data/pokemonNames';
-import { PokemonDex } from './PokemonDex';
-import { animatedSpriteUrl, onSpriteError, staticSpriteUrl } from '../utils/spriteUrl';
+import { useEffect, useState } from "react";
+import { ALL_GAME_POKEMON_IDS } from "../data/allGamePokemon";
+import { getPokemonName } from "../data/pokemonNames";
+import { PokemonDex } from "./PokemonDex";
+import {
+  animatedSpriteUrl,
+  onSpriteError,
+  staticSpriteUrl,
+} from "../utils/spriteUrl";
 
 interface Props {
   caughtPokemon: number[];
@@ -10,6 +14,12 @@ interface Props {
 
 export function PokedexView({ caughtPokemon }: Props) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (selectedId !== null) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [selectedId]);
   const caughtSet = new Set(caughtPokemon);
   const total = ALL_GAME_POKEMON_IDS.length;
   const caught = caughtPokemon.length;
@@ -61,22 +71,24 @@ export function PokedexView({ caughtPokemon }: Props) {
             <button
               key={id}
               className={[
-                'pokedex-entry',
-                isCaught ? '' : 'pokedex-entry--uncaught',
-                isSelected ? 'pokedex-entry--selected' : '',
-              ].join(' ').trim()}
+                "pokedex-entry",
+                isCaught ? "" : "pokedex-entry--uncaught",
+                isSelected ? "pokedex-entry--selected" : "",
+              ]
+                .join(" ")
+                .trim()}
               onClick={() => handleSelect(id)}
               disabled={!isCaught}
             >
               <img
                 src={isCaught ? animatedSpriteUrl(id) : staticSpriteUrl(id)}
-                alt={isCaught ? getPokemonName(id) : '???'}
+                alt={isCaught ? getPokemonName(id) : "???"}
                 className="pokedex-entry__sprite"
                 onError={isCaught ? (e) => onSpriteError(e, id) : undefined}
               />
               <div className="pokedex-entry__no">No.{id}</div>
               <div className="pokedex-entry__name">
-                {isCaught ? getPokemonName(id) : '???'}
+                {isCaught ? getPokemonName(id) : "???"}
               </div>
             </button>
           );
