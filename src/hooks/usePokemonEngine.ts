@@ -349,7 +349,7 @@ export function usePokemonEngine() {
 
   /** 開発者モード: 任意DPを直接付与 */
   const grantDp = useCallback(
-    (
+    async (
       targetSlotId: number | "pool",
       attribute: AttributeType | "all",
       amount: number,
@@ -424,8 +424,12 @@ export function usePokemonEngine() {
           totalEvolutions: newEvolutions,
         };
       });
+      // DP付与後に技習得チェック（レベルアップで新技を習得する可能性）
+      if (targetSlotId !== "pool") {
+        await checkAndLearnMoves(targetSlotId);
+      }
     },
-    [],
+    [checkAndLearnMoves],
   );
 
   // ===== デコレーション購入（DPプールから消費） =====

@@ -132,7 +132,7 @@ export function migrateState(raw: unknown): GameState {
     merged.party = merged.party.map((slot) => ({
       ...slot,
       // 英語名（ASCII のみ）で保存されていた技はリセット → 起動時に日本語で再習得
-      learnedMoves: (slot.learnedMoves ?? []).every((m: string) => /^[\x00-\x7F\s]+$/.test(m))
+      learnedMoves: (slot.learnedMoves ?? []).some((m: string) => /^[A-Za-z]/.test(m))
         ? []
         : slot.learnedMoves,
       decoration: slot.decoration ?? makeEmptyDecoration(),

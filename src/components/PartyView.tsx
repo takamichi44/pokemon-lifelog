@@ -213,12 +213,14 @@ function PokemonCard({
             📖 {mode === "dex" ? "閉じる" : "図鑑"}
           </button>
         )}
-        <button
-          className={`pokemon-card__action-btn pokemon-card__action-btn--deco${mode === "deco" ? " active" : ""}`}
-          onClick={() => toggleMode("deco")}
-        >
-          🎨 {mode === "deco" ? "閉じる" : "デコる"}
-        </button>
+        {!isEgg && (
+          <button
+            className={`pokemon-card__action-btn pokemon-card__action-btn--deco${mode === "deco" ? " active" : ""}`}
+            onClick={() => toggleMode("deco")}
+          >
+            🎨 {mode === "deco" ? "閉じる" : "デコる"}
+          </button>
+        )}
       </div>
 
       {/* ===== チャットモード ===== */}
@@ -373,16 +375,29 @@ function PokemonCard({
                     label: `なつき度 ${cond.minAffection}`,
                     met: slot.totalDpEver >= (cond.minAffection ?? 0),
                   });
-                if (cond.timeOfDay)
+                if (cond.timeOfDay) {
+                  const hour = new Date().getHours();
+                  const currentTod = hour >= 6 && hour < 18 ? "day" : "night";
                   checks.push({
                     label: cond.timeOfDay === "day" ? "昼に活動" : "夜に活動",
-                    met: false,
+                    met: currentTod === cond.timeOfDay,
                   });
-                if (cond.bias)
+                }
+                if (cond.bias) {
+                  const domVal = slot.dp[cond.bias.dominant];
+                  const biasMet =
+                    cond.bias.withinRange !== undefined
+                      ? cond.bias.over.every(
+                          (a) => Math.abs(domVal - slot.dp[a as keyof typeof slot.dp]) <= cond.bias!.withinRange!,
+                        )
+                      : cond.bias.over.every(
+                          (a) => domVal > slot.dp[a as keyof typeof slot.dp],
+                        );
                   checks.push({
                     label: `${ATTR_LABEL[cond.bias.dominant]}が高い`,
-                    met: false,
+                    met: biasMet,
                   });
+                }
                 return (
                   <div
                     key={target.targetId}

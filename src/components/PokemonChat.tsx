@@ -67,9 +67,9 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // このスロット宛の活動と雑談（targetSlotId=null）を古い順に並べる
+  // このスロット宛の活動のみを古い順に並べる
   const allForSlot = [...state.chatHistory]
-    .filter((a) => a.targetSlotId === slot.slotId || a.targetSlotId === null)
+    .filter((a) => a.targetSlotId === slot.slotId)
     .reverse();
 
   const streak = state.effortStreak ?? 0;

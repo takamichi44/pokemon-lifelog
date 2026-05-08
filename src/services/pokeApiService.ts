@@ -62,9 +62,9 @@ async function getMoveJaName(slug: string, url: string): Promise<string> {
     const res = await fetch(url);
     if (!res.ok) throw new Error();
     const data = await res.json();
-    const jaEntry = (
-      data.names as Array<{ language: { name: string }; name: string }>
-    ).find((n) => n.language.name === "ja" || n.language.name === "ja-Hrkt");
+    const names = data.names as Array<{ language: { name: string }; name: string }>;
+    const jaEntry = names.find((n) => n.language.name === "ja")
+      ?? names.find((n) => n.language.name === "ja-Hrkt");
     const name = jaEntry?.name ?? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
     moveNameJaCache.set(slug, name);
     return name;
