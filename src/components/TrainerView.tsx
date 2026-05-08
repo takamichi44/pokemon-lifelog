@@ -9,6 +9,7 @@ interface Props {
   state: GameState;
   onReset: () => void;
   onDecayRateChange: (rate: number) => void;
+  onNameChange: (name: string) => void;
   onClaimReward: () => void;
   onGrantDp: (targetSlotId: number | 'pool', attribute: AttributeType | 'all', amount: number) => void;
 }
@@ -28,7 +29,7 @@ const ATTR_OPTIONS: { label: string; value: AttributeType | 'all' }[] = [
   { label: ATTRIBUTE_LABELS.life,     value: 'life' },
 ];
 
-export function TrainerView({ state, onReset, onDecayRateChange, onClaimReward, onGrantDp }: Props) {
+export function TrainerView({ state, onReset, onDecayRateChange, onNameChange, onClaimReward, onGrantDp }: Props) {
   const { totalTp, unlockedSlots, decayRate, totalActivityCount, totalEffortCount, totalHatches, totalEvolutions, unlockedBadges } = state;
 
   // 開発者モード
@@ -117,6 +118,17 @@ export function TrainerView({ state, onReset, onDecayRateChange, onClaimReward, 
       {/* 設定 */}
       <section className="trainer-section">
         <div className="trainer-section__title">設定</div>
+        <div className="trainer-setting-row">
+          <span className="trainer-setting-label">トレーナー名</span>
+          <input
+            type="text"
+            className="trainer-setting-input"
+            value={state.trainerName ?? "トレーナー"}
+            maxLength={12}
+            placeholder="トレーナー"
+            onChange={(e) => onNameChange(e.target.value || "トレーナー")}
+          />
+        </div>
         <div className="trainer-setting-row">
           <span className="trainer-setting-label">減衰レート</span>
           <select

@@ -81,6 +81,7 @@ export interface WeeklyChallenge {
 }
 
 export interface GameState {
+  trainerName: string;
   party: PokemonSlot[];
   dpPool: Record<AttributeType, number>;
   totalTp: number;

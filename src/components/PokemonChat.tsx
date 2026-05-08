@@ -115,7 +115,7 @@ export function PokemonChat({
         // 雑談判定：DP付与せずポケモンが返答するだけ
         if (result.type === "conversation") {
           if (!isEgg && slot.pokemonId) {
-            response = await respondToConversation(slot, text);
+            response = await respondToConversation(slot, text, state.trainerName ?? "トレーナー");
             playPokemonCry(slot.pokemonId);
           } else {
             response = "🥚 ……（タマゴがかすかに揺れている）";
@@ -131,7 +131,7 @@ export function PokemonChat({
         finalCat = result.category;
 
         if (!isEgg && slot.pokemonId) {
-          response = await respondToActivity(slot, text, finalAttr, finalCat);
+          response = await respondToActivity(slot, text, finalAttr, finalCat, state.trainerName ?? "トレーナー");
           playPokemonCry(slot.pokemonId);
         } else {
           response = "🥚 ……（タマゴが温かく震えている）";

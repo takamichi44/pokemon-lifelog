@@ -289,6 +289,7 @@ export async function respondToActivity(
   activityText: string,
   _attribute: AttributeType,
   category: ActivityCategory,
+  trainerName = "トレーナー",
 ): Promise<string> {
   const name = getPokemonName(slot.pokemonId ?? 0);
   const tic = getSpeechTic(slot.pokemonId ?? 0);
@@ -303,8 +304,8 @@ export async function respondToActivity(
 キャラクター: ${character}
 語尾: 文末は「〜${tic}」にする（例:「すごい${tic}！」「やったね${tic}」）
 
-トレーナーが活動を報告してきた。${effortOrDaily}ような返答を2文でする。
-自分の名前は使わない。活動内容（「${activityText}」）に具体的に触れること。
+トレーナーの名前は「${trainerName}」。トレーナーが活動を報告してきた。${effortOrDaily}ような返答を2文でする。
+自分の名前は使わない。トレーナーを名前で呼ぶこと。活動内容（「${activityText}」）に具体的に触れること。
 フランクに、キャラクターの個性を前面に出して話す。`;
 
   return callGemini({
@@ -318,6 +319,7 @@ export async function respondToActivity(
 export async function respondToConversation(
   slot: PokemonSlot,
   userMessage: string,
+  trainerName = "トレーナー",
 ): Promise<string> {
   const name = getPokemonName(slot.pokemonId ?? 0);
   const tic = getSpeechTic(slot.pokemonId ?? 0);
@@ -327,8 +329,8 @@ export async function respondToConversation(
 キャラクター: ${character}
 語尾: 文末は「〜${tic}」にする（例:「そうだね${tic}」「えっ本当${tic}？」）
 
-トレーナーが話しかけてきた: 「${userMessage}」
-自然に雑談として2文で返す。自分の名前は使わない。
+トレーナーの名前は「${trainerName}」。トレーナーが話しかけてきた: 「${userMessage}」
+自然に雑談として2文で返す。自分の名前は使わない。トレーナーを名前で呼ぶこと。
 フランクに、このポケモンらしい個性を出して話す。`;
 
   return callGemini({

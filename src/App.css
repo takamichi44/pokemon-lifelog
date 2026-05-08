@@ -807,6 +807,20 @@ body,
   font-size: 12px;
   min-height: 40px;
 }
+.trainer-setting-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  min-height: 40px;
+  width: 140px;
+}
+.trainer-setting-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
 
 .trainer-setting-hint {
   font-size: 11px;
