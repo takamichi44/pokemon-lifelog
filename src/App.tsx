@@ -18,6 +18,9 @@ export default function App() {
     grantDp,
     forgetMove,
     cancelPendingMove,
+    purchaseDecoration,
+    applyDecoration,
+    removeDecoration,
   } = usePokemonEngine();
   const [tab, setTab] = useState<TabId>("party");
 
@@ -29,8 +32,9 @@ export default function App() {
     category: ActivityCategory,
     targetSlotId: number | null,
     pokemonResponse?: string,
+    isConversation?: boolean,
   ) {
-    addActivity(text, attribute, category, targetSlotId, pokemonResponse);
+    addActivity(text, attribute, category, targetSlotId, pokemonResponse, isConversation);
   }
 
   return (
@@ -49,6 +53,9 @@ export default function App() {
             onClaimReward={claimChallengeReward}
             onForgetMove={forgetMove}
             onCancelPendingMove={cancelPendingMove}
+            onPurchaseDecoration={purchaseDecoration}
+            onApplyDecoration={applyDecoration}
+            onRemoveDecoration={removeDecoration}
           />
         )}
         {tab === "pokedex" && (

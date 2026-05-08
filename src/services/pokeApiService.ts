@@ -54,6 +54,26 @@ export interface Move {
 
 const cache = new Map<number, PokeData>();
 const movesCache = new Map<number, Move[]>();
+const moveNameJaCache = new Map<string, string>(); // english slug → Japanese name
+
+async function getMoveJaName(slug: string, url: string): Promise<string> {
+  if (moveNameJaCache.has(slug)) return moveNameJaCache.get(slug)!;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const jaEntry = (
+      data.names as Array<{ language: { name: string }; name: string }>
+    ).find((n) => n.language.name === "ja" || n.language.name === "ja-Hrkt");
+    const name = jaEntry?.name ?? slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    moveNameJaCache.set(slug, name);
+    return name;
+  } catch {
+    const fallback = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    moveNameJaCache.set(slug, fallback);
+    return fallback;
+  }
+}
 
 export async function getPokeData(id: number): Promise<PokeData> {
   if (cache.has(id)) return cache.get(id)!;
@@ -105,24 +125,36 @@ export async function getMovesByPokemonId(id: number): Promise<Move[]> {
     if (!res.ok) throw new Error("PokeAPI 取得失敗");
 
     const data = await res.json();
-    const moves = (
+
+    // レベルアップ技のみ抽出し、全バージョンの中から最小レベルを採用
+    const levelUpMap = new Map<string, { url: string; minLevel: number }>();
+    (
       data.moves as Array<{
-        move: { name: string };
+        move: { name: string; url: string };
         version_group_details: Array<{
           level_learned_at: number;
           move_learn_method: { name: string };
         }>;
       }>
-    )
-      .flatMap((m) =>
-        m.version_group_details
-          .filter((v) => v.move_learn_method.name === "level-up")
-          .map((v) => ({
-            name: m.move.name.toUpperCase().replace(/-/g, " "),
-            level: v.level_learned_at,
-          })),
-      )
-      .filter((m) => m.level > 0)
+    ).forEach((m) => {
+      m.version_group_details
+        .filter((v) => v.move_learn_method.name === "level-up" && v.level_learned_at > 0)
+        .forEach((v) => {
+          const existing = levelUpMap.get(m.move.name);
+          if (existing === undefined || v.level_learned_at < existing.minLevel) {
+            levelUpMap.set(m.move.name, { url: m.move.url, minLevel: v.level_learned_at });
+          }
+        });
+    });
+
+    // 日本語技名を並列取得
+    const entries = Array.from(levelUpMap.entries());
+    const jaNames = await Promise.all(
+      entries.map(([slug, { url }]) => getMoveJaName(slug, url)),
+    );
+
+    const moves: Move[] = entries
+      .map(([, { minLevel }], i) => ({ name: jaNames[i], level: minLevel }))
       .sort((a, b) => a.level - b.level);
 
     movesCache.set(id, moves);

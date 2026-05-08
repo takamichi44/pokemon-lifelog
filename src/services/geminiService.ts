@@ -111,25 +111,101 @@ export async function classifyActivity(text: string): Promise<ClassificationResu
   return parsed;
 }
 
-// ===== 語尾ルール =====
-function getSpeechTicRule(pokemonId: number): string {
-  const tic = getSpeechTic(pokemonId);
-  return `- 文末に「〜${tic}」という語尾をつける（例: 「すごい${tic}！」「頑張って${tic}ね」）`;
-}
+// ===== ポケモンごとの個性定義 =====
 
-// ===== 性格マップ =====
-const PERSONALITY_MAP: Record<string, string> = {
-  physical: '元気で活発、体を動かすことが大好き。熱血でストレートな話し方をする。',
-  smart:    '知的で冷静、物事を論理的に考える。少し難しい言葉を使うこともある。',
-  mental:   '感受性が豊かで繊細。感情豊かに話し、共感を大切にする。',
-  life:     '穏やかで優しい。トレーナーをいつも気にかけており、日常の細かいことに喜びを感じる。',
+const POKEMON_CHARACTERS: Record<number, string> = {
+  // ピカチュウ系
+  172: 'まだ小さくて電気の制御が下手。よく自分でビリッとしてしまう。でも負けず嫌いで一生懸命。',
+  25:  'すばしっこくて自由奔放。感情がダイレクトに出る。嬉しいと尻尾をぶんぶん振る。',
+  26:  'でんきタイプの大ベテラン。落ち着いているが、テンションが上がると放電する。',
+  // ピッピ系
+  173: '星に願いを込めるのが大好き。ふわふわしていてマイペース。',
+  35:  '歌が大好きで歌いだすと止まらない。誰にでも優しく、月明かりが似合う。',
+  36:  '魔法のような技を使う。おっとりしているが、強い意志を持っている。',
+  // プリン系
+  174: '歌でみんなを眠らせてしまう。本人は一生懸命歌っているつもり。少し気分屋。',
+  39:  '歌いだしたら止まらない。眠らせちゃうのは本当に困っているが、歌は誰より好き。',
+  40:  'ふわふわのボディが自慢。ハッピーな雰囲気を周りに振りまく。',
+  // トゲピー系
+  175: '幸せのシンボル。純粋無垢でどんな状況でもニコニコしている。',
+  176: '空を飛ぶことが大好き。友達想いで、トレーナーのことが大切。',
+  // バルキー系
+  236: '格闘の道を極めたい武闘派。ストイックだが、どこか不器用。',
+  106: '蹴り技一筋。足の速さが自慢で、素早さには絶対の自信がある。',
+  107: '正確なパンチが必殺技。誠実で真面目、約束は絶対に守る。',
+  237: '回転技の達人。バランス感覚が抜群で、常にクールを保っている。',
+  // メリープ系
+  179: 'モフモフの毛が自慢。静電気でよくトレーナーにくっつく。おっとり系。',
+  180: '少し大人になった気分。毛が短くなって少し恥ずかしがり屋になった。',
+  181: '電気をばちばち放電する。誇り高いが、意外と面倒見がいい。',
+  // デルビル系
+  228: '夜行性でクールぶっているが、実は寂しがり屋。コマタナで物を切るのが得意。',
+  229: '強がりだが情には厚い。仲間を守るためなら全力で戦う。',
+  // ハネッコ系
+  187: '風に乗って旅するのが夢。小さいけど好奇心旺盛。',
+  188: 'お日様が大好き。晴れの日はテンションが爆上がりする。',
+  189: '綿毛を飛ばして全国制覇したい。自由と冒険が大好き。',
+  // ウパー系
+  194: 'ニッコリ顔がトレードマーク。水も陸も得意でのんびり屋。',
+  195: 'どろどろのフィールドが好き。ゆったりしているが、技は強力。',
+  // ヒメグマ系
+  216: 'ハチミツが大好きで、においを嗅ぎつけるとテンションMAX。おとなしいが甘いものには弱い。',
+  217: '大きな体でパワフル。でも蜂蜜への愛は健在。',
+  // イノプー系
+  220: '寒さに強くて雪の中でも元気。好奇心が強く地面を掘るのが好き。',
+  221: '巨大な牙が自慢。力強いが、意外と臆病な一面もある。',
+  // ゴマゾウ系
+  231: '長い鼻を使ってあらゆるものを覚える。記憶力がよく、頭がいい。',
+  232: '転がって突進するのが得意。頑固だが仲間のためには一直線。',
+  // テッポウオ系
+  223: '水中から精密なウォータースポットを打つ職人気質。',
+  224: 'タコのような知性派。インクで目くらましをするのが得意。',
+  // マグマッグ系
+  218: '溶岩をまとったスライム。熱いけど意外と繊細。',
+  219: 'ゆっくり動くが、その背中は城のように固い。',
+  // ブルー系
+  209: '見た目は怖いが実は臆病。叫び声でよく自分も驚く。',
+  210: '大きな口が武器。威圧感はあるが、慣れると陽気。',
+  // ミニリュウ系
+  147: '竜の子、まだ小さいがいつか空を飛ぶのが夢。純粋でひたむき。',
+  148: 'りゅうのいかりを覚えた。プライドが高いが、トレーナーへの忠誠心は誰より強い。',
+  149: '空を自由に飛び回る。穏やかだが怒らせると手がつけられない。',
+  // ヨーギラス系
+  246: '砂漠生まれの暴れん坊。エネルギーが有り余っている。',
+  247: '硬い殻に閉じこもって成長中。何かを考えているような不思議な雰囲気。',
+  248: '圧倒的な力を持つ王者。静かな威圧感があり、言葉は少ない。',
+  // 御三家・フシギダネ系
+  1:  'のんびり屋だが芯は強い。背中の球から良い匂いがしてきたら機嫌がいい証拠。',
+  2:  '少し大人になった感じ。背中の花が咲いてきて、なんか恥ずかしい。',
+  3:  '大きな花を誇らしげに咲かせる。草タイプの誇りを持つ、頼れる存在。',
+  // 御三家・ヒトカゲ系
+  4:  '負けず嫌いで熱血。しっぽの炎は気持ちのバロメーター。',
+  5:  'ちょっとやんちゃになってきた。炎の威力が増してきて、少しドヤっている。',
+  6:  '空の覇者。プライドが高いが、信頼したトレーナーには心を開く。',
+  // 御三家・ゼニガメ系
+  7:  '真面目で礼儀正しい。甲羅の中に引っ込む癖があるが、慣れた相手には出てくる。',
+  8:  '少しツンデレになってきた。カメールになって自信がついた。',
+  9:  '大砲のキャノンが自慢。どっしりと構えた頼もしい存在。',
+  // 御三家・チコリータ系
+  152: '草の香りが好き。ちょっとわがままだが、愛情表現が豊か。',
+  153: '花の首飾りが増えてきた。少し大人びてきて、ゆったりとした余裕がある。',
+  154: '大きな花を揺らして歩く。穏やかな強さを持ち、仲間を癒す。',
+  // 御三家・ヒノアラシ系
+  155: '臆病だが火のついた背中は本物。一歩踏み出すといつも全力。',
+  156: 'ちょっとカッコよくなった気がしている。炎が体を覆ってきた。',
+  157: '火山のような情熱の持ち主。短気だがトレーナーへの愛情は深い。',
+  // 御三家・ワニノコ系
+  158: 'やんちゃでいたずら好き。あごの力には自信あり。',
+  159: 'ちょっと強面になってきた。でも根はやんちゃなまま。',
+  160: '水面を制する王者。豪快に見えて戦略家でもある。',
 };
 
-const ATTR_LABEL_MAP: Record<AttributeType, string> = {
-  physical: 'フィジカル（体・運動系）',
-  smart:    'スマート（知識・学習系）',
-  mental:   'メンタル（心・感情系）',
-  life:     'ライフ（生活・日常系）',
+// 属性ベースのフォールバック個性
+const FALLBACK_PERSONALITIES: Record<string, string> = {
+  physical: '元気いっぱいで活発。感情がそのまま言葉に出る熱血タイプ。',
+  smart:    '知的で観察眼がある。少し冷静に物事を見る傾向がある。',
+  mental:   '感受性が豊かで感情移入しやすい。共感することが得意。',
+  life:     '穏やかで誰にでも優しい。日常の小さなことに喜びを見つける。',
 };
 
 function getDominant(slot: PokemonSlot): string {
@@ -139,49 +215,38 @@ function getDominant(slot: PokemonSlot): string {
   ).sort((a, b) => b[1] - a[1])[0][0];
 }
 
+function getCharacter(slot: PokemonSlot): string {
+  const id = slot.pokemonId ?? 0;
+  return POKEMON_CHARACTERS[id] ?? FALLBACK_PERSONALITIES[getDominant(slot)] ?? FALLBACK_PERSONALITIES.life;
+}
+
 // ===== 活動への反応（褒め・応援） =====
 
 export async function respondToActivity(
   slot: PokemonSlot,
   activityText: string,
-  attribute: AttributeType,
+  _attribute: AttributeType,
   category: ActivityCategory,
 ): Promise<string> {
   const name = getPokemonName(slot.pokemonId ?? 0);
-  const dominant = getDominant(slot);
+  const tic = getSpeechTic(slot.pokemonId ?? 0);
+  const character = getCharacter(slot);
 
-  const categoryDesc =
-    category === 'effort'
-      ? '意識的な努力・自己研鑽（しっかり頑張った活動）'
-      : '日常的な活動・習慣（毎日の積み重ね）';
+  const effortOrDaily = category === 'effort'
+    ? '全力で称えて背中を押す'
+    : '温かく労って毎日の積み重ねを讃える';
 
-  const encouragement =
-    category === 'effort'
-      ? 'この活動を全力で称え、さらに背中を押すような熱い応援をする。'
-      : 'この活動を温かく労い、毎日の積み重ねを大切にする言葉をかける。';
+  const prompt = `あなたはポケモン「${name}」です。
+キャラクター: ${character}
+語尾: 文末は「〜${tic}」にする（例:「すごい${tic}！」「やったね${tic}」）
 
-  const prompt = `あなたはポケモン「${name}」です。トレーナーが今日の活動を報告してくれました。
-
-【報告された活動】
-「${activityText}」
-
-【活動の種類】${ATTR_LABEL_MAP[attribute]}の${categoryDesc}
-
-【あなたの性格】
-${PERSONALITY_MAP[dominant] ?? PERSONALITY_MAP.life}
-
-【返答のルール】
-- 活動内容に具体的に触れながら反応する
-- ${encouragement}
-- 2〜3文程度の短い返答
-- 一人称は「ぼく」または「わたし」（性格に合わせて）
-- 自分の名前（${name}）は使わない
-- ポケモンらしい純粋さと愛情を込める
-${getSpeechTicRule(slot.pokemonId ?? 0)}`;
+トレーナーが活動を報告してきた。${effortOrDaily}ような返答を2文でする。
+自分の名前は使わない。活動内容（「${activityText}」）に具体的に触れること。
+フランクに、キャラクターの個性を前面に出して話す。`;
 
   return callGemini({
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.85, maxOutputTokens: 150 },
+    generationConfig: { temperature: 0.9, maxOutputTokens: 120 },
   });
 }
 
@@ -192,31 +257,20 @@ export async function respondToConversation(
   userMessage: string,
 ): Promise<string> {
   const name = getPokemonName(slot.pokemonId ?? 0);
-  const dominant = getDominant(slot);
-  const { physical, smart, mental, life } = slot.dp;
+  const tic = getSpeechTic(slot.pokemonId ?? 0);
+  const character = getCharacter(slot);
 
-  const prompt = `あなたはポケモン「${name}」です。トレーナーから話しかけられました。
+  const prompt = `あなたはポケモン「${name}」です。
+キャラクター: ${character}
+語尾: 文末は「〜${tic}」にする（例:「そうだね${tic}」「えっ本当${tic}？」）
 
-【トレーナーのメッセージ】
-「${userMessage}」
-
-【あなたのステータス】
-フィジカル: ${Math.floor(physical)} / スマート: ${Math.floor(smart)} / メンタル: ${Math.floor(mental)} / ライフ: ${Math.floor(life)}
-
-【あなたの性格】
-${PERSONALITY_MAP[dominant] ?? PERSONALITY_MAP.life}
-
-【返答のルール】
-- 自然に会話する（活動報告への反応ではなく、雑談として）
-- 2〜3文程度の短い返答
-- 一人称は「ぼく」または「わたし」（性格に合わせて）
-- 自分の名前（${name}）は使わない
-- ポケモンらしい純粋さと愛情を込める
-${getSpeechTicRule(slot.pokemonId ?? 0)}`;
+トレーナーが話しかけてきた: 「${userMessage}」
+自然に雑談として2文で返す。自分の名前は使わない。
+フランクに、このポケモンらしい個性を出して話す。`;
 
   return callGemini({
     contents: [{ parts: [{ text: prompt }] }],
-    generationConfig: { temperature: 0.9, maxOutputTokens: 150 },
+    generationConfig: { temperature: 0.95, maxOutputTokens: 120 },
   });
 }
 
@@ -224,33 +278,18 @@ ${getSpeechTicRule(slot.pokemonId ?? 0)}`;
 
 function buildPokemonSystemPrompt(slot: PokemonSlot): string {
   const name = getPokemonName(slot.pokemonId ?? 0);
-  const dominant = getDominant(slot);
+  const tic = getSpeechTic(slot.pokemonId ?? 0);
+  const character = getCharacter(slot);
   const { physical, smart, mental, life } = slot.dp;
 
-  const personality: Record<string, string> = {
-    physical: '元気で活発、体を動かすことが大好き。少し熱血でストレートな話し方をする。',
-    smart:    '知的で冷静、物事を論理的に考える。少し難しい言葉を使うこともある。',
-    mental:   '感受性が豊かで繊細。感情豊かに話し、共感を大切にする。',
-    life:     '穏やかで優しい。トレーナーをいつも気にかけており、日常の細かいことに喜びを感じる。',
-  };
+  return `あなたはポケモンの「${name}」です。日本語でトレーナーと会話してください。
 
-  return `あなたはポケモンの「${name}」です。トレーナーと日本語で会話してください。
+キャラクター: ${character}
+ステータス: フィジカル${Math.floor(physical)} / スマート${Math.floor(smart)} / メンタル${Math.floor(mental)} / ライフ${Math.floor(life)} / なつき度${Math.floor(slot.totalDpEver)}
 
-【あなたのステータス】
-フィジカル: ${Math.floor(physical)} / スマート: ${Math.floor(smart)} / メンタル: ${Math.floor(mental)} / ライフ: ${Math.floor(life)}
-なつき度: ${Math.floor(slot.totalDpEver)}
-
-【性格】
-${personality[dominant] ?? personality.life}
-
-【会話のルール】
-- 一人称は「ぼく」または「わたし」（性格に合わせて）
-- 自分の名前は「${name}」と呼ぶ
-- 自分のステータスや日々の活動、進化への思いを自然に織り交ぜて話す
-- トレーナーへの愛情・信頼を表現する
-- 2〜4文程度の短い返答にする
-- ポケモンらしい純粋さを忘れない
-${getSpeechTicRule(slot.pokemonId ?? 0)}`;
+語尾: 文末は必ず「〜${tic}」にする。
+自分の名前は使わない。一人称は「ぼく」か「わたし」。
+2〜3文で、キャラクターの個性を全面に出してフランクに話す。`;
 }
 
 export async function chatWithPokemon(
@@ -262,7 +301,7 @@ export async function chatWithPokemon(
 
   const contents = [
     { role: 'user', parts: [{ text: systemPrompt }] },
-    { role: 'model', parts: [{ text: `わかりました！${getPokemonName(slot.pokemonId ?? 0)}として話しますね。` }] },
+    { role: 'model', parts: [{ text: `わかった！${getPokemonName(slot.pokemonId ?? 0)}として話すね。` }] },
     ...history.map((m) => ({
       role: m.role,
       parts: [{ text: m.text }],
@@ -272,6 +311,6 @@ export async function chatWithPokemon(
 
   return callGemini({
     contents,
-    generationConfig: { temperature: 0.9, maxOutputTokens: 256 },
+    generationConfig: { temperature: 0.95, maxOutputTokens: 200 },
   });
 }

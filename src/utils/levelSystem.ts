@@ -1,7 +1,7 @@
 /**
  * レベル計算
- * DP 0-50 → レベル1
- * DP 50-100 → レベル2
+ * DP 0-49  → レベル1
+ * DP 50-99 → レベル2
  * ...
  * DP 4950+ → レベル100
  */
@@ -17,14 +17,17 @@ export function getPreviousLevel(totalDpBefore: number): number {
 }
 
 /**
- * 指定レベルで習得できる技を取得
- * レベルアップ時にレベル × 10 でマッピング
- * 例: レベル 10 → 100以上の技レベルを持つ技
+ * 指定ゲームレベルで習得できる技を取得。
+ * PokeAPI の level_learned_at を10で割り切り上げてゲームレベルにマッピング。
+ *   例: PokeAPI level 1-10  → ゲームレベル 1
+ *       PokeAPI level 11-20 → ゲームレベル 2
+ *       PokeAPI level 21-30 → ゲームレベル 3
  */
 export function getMovesForLevel(
   allMoves: Array<{ name: string; level: number }>,
   targetLevel: number,
 ): string[] {
-  const levelThreshold = targetLevel * 10;
-  return allMoves.filter((m) => m.level === levelThreshold).map((m) => m.name);
+  return allMoves
+    .filter((m) => Math.ceil(m.level / 10) === targetLevel)
+    .map((m) => m.name);
 }

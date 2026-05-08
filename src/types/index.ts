@@ -1,6 +1,23 @@
 export type AttributeType = "physical" | "smart" | "mental" | "life";
 export type ActivityCategory = "effort" | "daily";
 export type TimeOfDay = "day" | "night";
+export type DecorationCategory = "background" | "frame" | "accessory";
+
+export interface DecorationItem {
+  id: string;
+  category: DecorationCategory;
+  name: string;
+  emoji: string;
+  cost: number;
+  cssClass: string; // カードに付与するCSSクラス
+}
+
+export interface SlotDecoration {
+  backgroundId: string | null;
+  frameId: string | null;
+  accessoryIds: string[]; // 同時装備（最大3）
+  purchasedIds: string[]; // 購入済みID（再適用無料）
+}
 
 export interface Activity {
   id: string;
@@ -23,6 +40,7 @@ export interface PokemonSlot {
   totalDpEver: number; // なつき度代替（減衰の影響を受けない累計）
   lastUpdatedAt: number;
   learnedMoves: string[]; // 習得済み技（最大4つ）
+  decoration: SlotDecoration; // カードデコレーション
 }
 
 export interface BiasCondition {
@@ -32,6 +50,7 @@ export interface BiasCondition {
 }
 
 export interface EvolutionConditions {
+  minLevel?: number;
   minPhysical?: number;
   minSmart?: number;
   minMental?: number;
