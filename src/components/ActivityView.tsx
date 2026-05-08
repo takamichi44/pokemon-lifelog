@@ -7,7 +7,11 @@ import {
   CATEGORY_COEFFICIENTS,
 } from "../types";
 import { getPokemonName } from "../data/pokemonNames";
-import { classifyActivity, respondToActivity } from "../services/geminiService";
+import {
+  classifyActivity,
+  respondToActivity,
+  respondToConversation,
+} from "../services/geminiService";
 import { getStreakMultiplier } from "../hooks/usePokemonEngine";
 import {
   getChallengeDefinition,
@@ -24,6 +28,7 @@ interface Props {
     category: ActivityCategory,
     targetSlotId: number | null,
     pokemonResponse?: string,
+    isConversation?: boolean,
   ) => void;
   onClaimReward: () => void;
   onForgetMove?: (moveToForgot: string) => void;
@@ -183,32 +188,50 @@ export function ActivityView({
       let finalAttr = attribute;
       let finalCat = category;
       let pokemonResponse: string | undefined;
+      let isConversation = false;
 
       if (useAi) {
         const result = await classifyActivity(trimmed);
-        finalAttr = result.attribute;
-        finalCat = result.category;
-
-        if (!isEgg && currentSlot?.pokemonId) {
-          pokemonResponse = await respondToActivity(
-            currentSlot,
-            trimmed,
-            finalAttr,
-            finalCat,
-          );
-        } else if (isEgg) {
-          pokemonResponse = "🥚 ……（タマゴが温かく震えている）";
+        if (result.type === "conversation") {
+          isConversation = true;
+          finalAttr = "life";
+          finalCat = "daily";
+          if (!isEgg && currentSlot?.pokemonId) {
+            pokemonResponse = await respondToConversation(currentSlot, trimmed);
+          } else {
+            pokemonResponse = "🥚 ……（タマゴが温かく震えている）";
+          }
+        } else {
+          finalAttr = result.attribute;
+          finalCat = result.category;
+          if (!isEgg && currentSlot?.pokemonId) {
+            pokemonResponse = await respondToActivity(
+              currentSlot,
+              trimmed,
+              finalAttr,
+              finalCat,
+            );
+          } else if (isEgg) {
+            pokemonResponse = "🥚 ……（タマゴが温かく震えている）";
+          }
         }
       } else {
         pokemonResponse = getTemplate(finalCat, pokemonName);
       }
 
+      const targetSlotId = isConversation
+        ? (currentSlot?.slotId ?? null)
+        : toPool
+          ? null
+          : (currentSlot?.slotId ?? null);
+
       onSubmit(
         trimmed,
         finalAttr,
         finalCat,
-        toPool ? null : (currentSlot?.slotId ?? null),
+        targetSlotId,
         pokemonResponse,
+        isConversation,
       );
       setText("");
       textareaRef.current?.focus();

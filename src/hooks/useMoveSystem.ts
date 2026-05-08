@@ -28,9 +28,15 @@ export function useMoveSystem(
         // setState コールバックで最新stateを取得して技習得判定
         setState((prev) => {
           const latestSlot = prev.party.find((s) => s.slotId === targetSlotId);
-          if (!latestSlot || latestSlot.isEgg || !latestSlot.pokemonId) return prev;
+          if (!latestSlot || latestSlot.isEgg || !latestSlot.pokemonId)
+            return prev;
 
           const currentLevel = calcLevel(latestSlot.totalDpEver);
+          const lastProcessedLevel = latestSlot.lastMoveLearnLevel ?? 0;
+
+          if (currentLevel <= lastProcessedLevel && !prev.pendingMove) {
+            return prev;
+          }
 
           // レベル1〜現在レベルの全技を確認（キャッチアップ含む）
           let newLearnedMoves = [...(latestSlot.learnedMoves ?? [])];
@@ -56,14 +62,22 @@ export function useMoveSystem(
           // 変化なければ state を更新しない
           const unchanged =
             newLearnedMoves.length === (latestSlot.learnedMoves ?? []).length &&
-            pendingMove === prev.pendingMove;
+            pendingMove === prev.pendingMove &&
+            currentLevel === lastProcessedLevel;
           if (unchanged) return prev;
 
           return {
             ...prev,
             party: prev.party.map((s) =>
               s.slotId === targetSlotId
-                ? { ...s, learnedMoves: newLearnedMoves }
+                ? {
+                    ...s,
+                    learnedMoves: newLearnedMoves,
+                    lastMoveLearnLevel: Math.max(
+                      lastProcessedLevel,
+                      currentLevel,
+                    ),
+                  }
                 : s,
             ),
             pendingMove,
