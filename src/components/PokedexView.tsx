@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ALL_GAME_POKEMON_IDS } from "../data/allGamePokemon";
 import { getPokemonName } from "../data/pokemonNames";
 import { PokemonDex } from "./PokemonDex";
@@ -14,10 +14,11 @@ interface Props {
 
 export function PokedexView({ caughtPokemon }: Props) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const detailRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (selectedId !== null) {
-      window.scrollTo({ top: 0, behavior: "smooth" });
+      detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }
   }, [selectedId]);
   const caughtSet = new Set(caughtPokemon);
@@ -42,7 +43,7 @@ export function PokedexView({ caughtPokemon }: Props) {
 
       {/* 選択中ポケモンの詳細 */}
       {selectedId !== null && (
-        <div className="pokedex-view__detail">
+        <div className="pokedex-view__detail" ref={detailRef}>
           <div className="pokedex-view__detail-sprite-row">
             <img
               src={animatedSpriteUrl(selectedId)}

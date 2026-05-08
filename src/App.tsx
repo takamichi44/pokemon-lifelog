@@ -1,15 +1,25 @@
-import { useState } from 'react';
-import { usePokemonEngine } from './hooks/usePokemonEngine';
-import { PartyView } from './components/PartyView';
-import { PokedexView } from './components/PokedexView';
-import { TrainerView } from './components/TrainerView';
-import { BottomNav, type TabId } from './components/BottomNav';
-import type { AttributeType, ActivityCategory } from './types';
-import './App.css';
+import { useState } from "react";
+import { usePokemonEngine } from "./hooks/usePokemonEngine";
+import { PartyView } from "./components/PartyView";
+import { PokedexView } from "./components/PokedexView";
+import { TrainerView } from "./components/TrainerView";
+import { BottomNav, type TabId } from "./components/BottomNav";
+import type { AttributeType, ActivityCategory } from "./types";
+import "./App.css";
 
 export default function App() {
-  const { state, addActivity, allocateFromPool, claimChallengeReward, resetGame, setDecayRate, grantDp } = usePokemonEngine();
-  const [tab, setTab] = useState<TabId>('party');
+  const {
+    state,
+    addActivity,
+    allocateFromPool,
+    claimChallengeReward,
+    resetGame,
+    setDecayRate,
+    grantDp,
+    forgetMove,
+    cancelPendingMove,
+  } = usePokemonEngine();
+  const [tab, setTab] = useState<TabId>("party");
 
   const hasPoolDp = Object.values(state.dpPool).some((v) => v > 0);
 
@@ -31,18 +41,20 @@ export default function App() {
       </header>
 
       <main className="app-main">
-        {tab === 'party' && (
+        {tab === "party" && (
           <PartyView
             state={state}
             onAllocate={allocateFromPool}
             onAddActivity={handleAddActivity}
             onClaimReward={claimChallengeReward}
+            onForgetMove={forgetMove}
+            onCancelPendingMove={cancelPendingMove}
           />
         )}
-        {tab === 'pokedex' && (
+        {tab === "pokedex" && (
           <PokedexView caughtPokemon={state.caughtPokemon ?? []} />
         )}
-        {tab === 'trainer' && (
+        {tab === "trainer" && (
           <TrainerView
             state={state}
             onReset={resetGame}

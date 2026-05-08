@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from "react";
 import type {
   GameState,
   PokemonSlot,
@@ -8,7 +8,7 @@ import type {
   EvolutionConditions,
   TimeOfDay,
   WeeklyChallenge,
-} from '../types';
+} from "../types";
 import {
   BASE_DP_PER_ACTIVITY,
   CATEGORY_COEFFICIENTS,
@@ -16,24 +16,34 @@ import {
   HATCH_POOL,
   TP_SLOT_THRESHOLDS,
   DEFAULT_DECAY_RATE,
-} from '../types';
-import { getEvolutionEntry } from '../data/evolutionTable';
-import { getMondayTimestamp, getChallengeTypeIndex, getChallengeDefinition } from '../data/weeklyChallenges';
+} from "../types";
+import { getEvolutionEntry } from "../data/evolutionTable";
+import {
+  getMondayTimestamp,
+  getChallengeTypeIndex,
+  getChallengeDefinition,
+} from "../data/weeklyChallenges";
+import { getMovesByPokemonId } from "../services/pokeApiService";
+import {
+  calcLevel,
+  getPreviousLevel,
+  getMovesForLevel,
+} from "../utils/levelSystem";
 
-const STORAGE_KEY = 'pokemon_lifelog_state';
+const STORAGE_KEY = "pokemon_lifelog_state";
 
 // ===== ストリーク倍率 =====
 export function getStreakMultiplier(streak: number): number {
   if (streak >= 30) return 2.0;
   if (streak >= 14) return 1.8;
-  if (streak >= 7)  return 1.5;
-  if (streak >= 3)  return 1.2;
+  if (streak >= 7) return 1.5;
+  if (streak >= 3) return 1.2;
   return 1.0;
 }
 
 function getDateString(timestamp: number): string {
   const d = new Date(timestamp);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 function getYesterdayString(today: string): string {
@@ -51,6 +61,7 @@ function makeEmptySlot(slotId: number, isEgg: boolean): PokemonSlot {
     dp: { physical: 0, smart: 0, mental: 0, life: 0 },
     totalDpEver: 0,
     lastUpdatedAt: Date.now(),
+    learnedMoves: [],
   };
 }
 
@@ -79,13 +90,15 @@ function makeInitialState(): GameState {
     totalHatches: 0,
     totalEvolutions: 0,
     weeklyChallenge: null,
+    pendingMove: null,
+    pendingMoveSlotId: null,
   };
 }
 
 /** 保存データを新フィールドでマイグレーション */
 function migrateState(raw: unknown): GameState {
   const initial = makeInitialState();
-  if (typeof raw !== 'object' || raw === null) return initial;
+  if (typeof raw !== "object" || raw === null) return initial;
   return { ...initial, ...(raw as Partial<GameState>) };
 }
 
@@ -101,9 +114,9 @@ function applyDecay(slot: PokemonSlot, decayRate: number): PokemonSlot {
     ...slot,
     dp: {
       physical: Math.max(0, slot.dp.physical * decayFactor),
-      smart:    Math.max(0, slot.dp.smart    * decayFactor),
-      mental:   Math.max(0, slot.dp.mental   * decayFactor),
-      life:     Math.max(0, slot.dp.life     * decayFactor),
+      smart: Math.max(0, slot.dp.smart * decayFactor),
+      mental: Math.max(0, slot.dp.mental * decayFactor),
+      life: Math.max(0, slot.dp.life * decayFactor),
     },
     lastUpdatedAt: now,
   };
@@ -112,7 +125,7 @@ function applyDecay(slot: PokemonSlot, decayRate: number): PokemonSlot {
 // ===== 進化 =====
 function getTimeOfDay(timestamp: number): TimeOfDay {
   const hour = new Date(timestamp).getHours();
-  return hour >= 6 && hour < 18 ? 'day' : 'night';
+  return hour >= 6 && hour < 18 ? "day" : "night";
 }
 
 function meetsConditions(
@@ -121,18 +134,31 @@ function meetsConditions(
   timeOfDay: TimeOfDay,
 ): boolean {
   const { dp, totalDpEver } = slot;
-  if (conditions.minPhysical !== undefined && dp.physical < conditions.minPhysical) return false;
-  if (conditions.minSmart    !== undefined && dp.smart    < conditions.minSmart)    return false;
-  if (conditions.minMental   !== undefined && dp.mental   < conditions.minMental)   return false;
-  if (conditions.minLife     !== undefined && dp.life     < conditions.minLife)     return false;
-  if (conditions.minAffection !== undefined && totalDpEver < conditions.minAffection) return false;
-  if (conditions.timeOfDay   !== undefined && conditions.timeOfDay !== timeOfDay)  return false;
+  if (
+    conditions.minPhysical !== undefined &&
+    dp.physical < conditions.minPhysical
+  )
+    return false;
+  if (conditions.minSmart !== undefined && dp.smart < conditions.minSmart)
+    return false;
+  if (conditions.minMental !== undefined && dp.mental < conditions.minMental)
+    return false;
+  if (conditions.minLife !== undefined && dp.life < conditions.minLife)
+    return false;
+  if (
+    conditions.minAffection !== undefined &&
+    totalDpEver < conditions.minAffection
+  )
+    return false;
+  if (conditions.timeOfDay !== undefined && conditions.timeOfDay !== timeOfDay)
+    return false;
 
   if (conditions.bias) {
     const { dominant, over, withinRange } = conditions.bias;
     const domVal = dp[dominant];
     if (withinRange !== undefined) {
-      if (!over.every((a) => Math.abs(domVal - dp[a]) <= withinRange)) return false;
+      if (!over.every((a) => Math.abs(domVal - dp[a]) <= withinRange))
+        return false;
     } else {
       if (!over.every((a) => domVal > dp[a])) return false;
     }
@@ -145,7 +171,8 @@ function checkEvolution(slot: PokemonSlot, inputTime: number): PokemonSlot {
 
   if (slot.isEgg) {
     if (slot.totalDpEver >= HATCH_THRESHOLD) {
-      const randomId = HATCH_POOL[Math.floor(Math.random() * HATCH_POOL.length)];
+      const randomId =
+        HATCH_POOL[Math.floor(Math.random() * HATCH_POOL.length)];
       return { ...slot, pokemonId: randomId, isEgg: false };
     }
     return slot;
@@ -181,7 +208,15 @@ function addCaught(current: number[], newId: number): number[] {
 // ===== バッジ判定 =====
 function checkBadges(
   prev: GameState,
-  newState: Partial<GameState> & { effortStreak: number; totalTp: number; totalActivityCount: number; totalEffortCount: number; totalHatches: number; totalEvolutions: number; caughtPokemon: number[] },
+  newState: Partial<GameState> & {
+    effortStreak: number;
+    totalTp: number;
+    totalActivityCount: number;
+    totalEffortCount: number;
+    totalHatches: number;
+    totalEvolutions: number;
+    caughtPokemon: number[];
+  },
 ): string[] {
   const existing = prev.unlockedBadges;
   const gained: string[] = [];
@@ -189,30 +224,30 @@ function checkBadges(
     if (cond && !existing.includes(id) && !gained.includes(id)) gained.push(id);
   }
 
-  check('streak_3',       newState.effortStreak >= 3);
-  check('streak_7',       newState.effortStreak >= 7);
-  check('streak_14',      newState.effortStreak >= 14);
-  check('streak_30',      newState.effortStreak >= 30);
+  check("streak_3", newState.effortStreak >= 3);
+  check("streak_7", newState.effortStreak >= 7);
+  check("streak_14", newState.effortStreak >= 14);
+  check("streak_30", newState.effortStreak >= 30);
 
-  check('activities_10',  newState.totalActivityCount >= 10);
-  check('activities_50',  newState.totalActivityCount >= 50);
-  check('activities_100', newState.totalActivityCount >= 100);
-  check('activities_300', newState.totalActivityCount >= 300);
+  check("activities_10", newState.totalActivityCount >= 10);
+  check("activities_50", newState.totalActivityCount >= 50);
+  check("activities_100", newState.totalActivityCount >= 100);
+  check("activities_300", newState.totalActivityCount >= 300);
 
-  check('tp_100',         newState.totalTp >= 100);
-  check('tp_500',         newState.totalTp >= 500);
-  check('tp_1500',        newState.totalTp >= 1500);
-  check('tp_5000',        newState.totalTp >= 5000);
+  check("tp_100", newState.totalTp >= 100);
+  check("tp_500", newState.totalTp >= 500);
+  check("tp_1500", newState.totalTp >= 1500);
+  check("tp_5000", newState.totalTp >= 5000);
 
-  check('first_hatch',    newState.totalHatches >= 1);
-  check('hatches_5',      newState.totalHatches >= 5);
-  check('first_evo',      newState.totalEvolutions >= 1);
-  check('evolutions_10',  newState.totalEvolutions >= 10);
-  check('pokedex_10',     newState.caughtPokemon.length >= 10);
-  check('pokedex_30',     newState.caughtPokemon.length >= 30);
+  check("first_hatch", newState.totalHatches >= 1);
+  check("hatches_5", newState.totalHatches >= 5);
+  check("first_evo", newState.totalEvolutions >= 1);
+  check("evolutions_10", newState.totalEvolutions >= 10);
+  check("pokedex_10", newState.caughtPokemon.length >= 10);
+  check("pokedex_30", newState.caughtPokemon.length >= 30);
 
-  check('effort_10',      newState.totalEffortCount >= 10);
-  check('effort_50',      newState.totalEffortCount >= 50);
+  check("effort_10", newState.totalEffortCount >= 10);
+  check("effort_50", newState.totalEffortCount >= 50);
 
   return gained;
 }
@@ -230,7 +265,7 @@ function updateWeeklyChallenge(
 
   const counts =
     (def.attribute === undefined || def.attribute === attribute) &&
-    (def.category  === undefined || def.category  === category);
+    (def.category === undefined || def.category === category);
 
   // 新しい週 or 初回
   if (!prev || prev.weekStart !== weekStart) {
@@ -293,51 +328,69 @@ export function usePokemonEngine() {
   }, [state]);
 
   const addActivity = useCallback(
-    (
+    async (
       text: string,
       attribute: AttributeType,
       category: ActivityCategory,
       targetSlotId: number | null,
       pokemonResponse?: string,
+      isConversation?: boolean,
     ) => {
       const now = Date.now();
       const todayStr = getDateString(now);
-      const isEffort = category === 'effort';
+      const isEffort = category === "effort";
+      const isConversationActivity = isConversation === true;
 
       setState((prev) => {
-        // ===== ストリーク計算 =====
         let newStreak = prev.effortStreak;
         let newLongest = prev.longestStreak;
         let newLastEffortDate = prev.lastEffortDate;
-
-        if (isEffort) {
-          if (prev.lastEffortDate === null) {
-            newStreak = 1;
-          } else if (prev.lastEffortDate === todayStr) {
-            // 今日すでに努力済み → ストリーク変化なし
-          } else if (prev.lastEffortDate === getYesterdayString(todayStr)) {
-            // 昨日に続いて今日も努力
-            newStreak = prev.effortStreak + 1;
-          } else {
-            // 途絶えていた → リセット
-            newStreak = 1;
-          }
-          newLastEffortDate = todayStr;
-          newLongest = Math.max(newLongest, newStreak);
-        }
-
-        // ===== DP倍率計算 =====
         let multiplier = 1.0;
-        if (isEffort) {
-          multiplier *= getStreakMultiplier(newStreak);
-          // 今日最初の努力活動なら +30%
-          if (prev.lastEffortDate !== todayStr) {
-            multiplier *= 1.3;
-          }
-        }
+        let earned = 0;
+        let newChallenge = prev.weeklyChallenge;
+        let newActivityCount = prev.totalActivityCount ?? 0;
+        let newEffortCount = prev.totalEffortCount ?? 0;
 
-        const baseEarned = BASE_DP_PER_ACTIVITY * CATEGORY_COEFFICIENTS[category];
-        const earned = Math.round(baseEarned * multiplier * 10) / 10; // 小数第1位
+        if (!isConversationActivity) {
+          // ===== ストリーク計算 =====
+          if (isEffort) {
+            if (prev.lastEffortDate === null) {
+              newStreak = 1;
+            } else if (prev.lastEffortDate === todayStr) {
+              // 今日すでに努力済み → ストリーク変化なし
+            } else if (prev.lastEffortDate === getYesterdayString(todayStr)) {
+              // 昨日に続いて今日も努力
+              newStreak = prev.effortStreak + 1;
+            } else {
+              // 途絶えていた → リセット
+              newStreak = 1;
+            }
+            newLastEffortDate = todayStr;
+            newLongest = Math.max(newLongest, newStreak);
+          }
+
+          // ===== DP倍率計算 =====
+          if (isEffort) {
+            multiplier *= getStreakMultiplier(newStreak);
+            // 今日最初の努力活動なら +30%
+            if (prev.lastEffortDate !== todayStr) {
+              multiplier *= 1.3;
+            }
+          }
+
+          const baseEarned =
+            BASE_DP_PER_ACTIVITY * CATEGORY_COEFFICIENTS[category];
+          earned = Math.round(baseEarned * multiplier * 10) / 10; // 小数第1位
+
+          newChallenge = updateWeeklyChallenge(
+            prev.weeklyChallenge,
+            now,
+            attribute,
+            category,
+          );
+          newActivityCount = (prev.totalActivityCount ?? 0) + 1;
+          newEffortCount = (prev.totalEffortCount ?? 0) + (isEffort ? 1 : 0);
+        }
 
         const activity: Activity = {
           id: crypto.randomUUID(),
@@ -349,6 +402,7 @@ export function usePokemonEngine() {
           targetSlotId,
           createdAt: now,
           ...(pokemonResponse !== undefined ? { pokemonResponse } : {}),
+          ...(isConversationActivity ? { isConversation: true } : {}),
         };
 
         // ===== TP・スロット =====
@@ -361,45 +415,47 @@ export function usePokemonEngine() {
         let newHatches = prev.totalHatches ?? 0;
         let newEvolutions = prev.totalEvolutions ?? 0;
 
-        if (targetSlotId !== null) {
-          newParty = newParty.map((slot) => {
-            if (slot.slotId !== targetSlotId) return slot;
-            const prevId = slot.pokemonId;
-            const wasEgg = slot.isEgg;
-            const updated: PokemonSlot = {
-              ...slot,
-              dp: { ...slot.dp, [attribute]: slot.dp[attribute] + earned },
-              totalDpEver: slot.totalDpEver + earned,
-              lastUpdatedAt: now,
-            };
-            const evolved = checkEvolution(updated, now);
-            if (evolved.pokemonId !== null && evolved.pokemonId !== 0 && evolved.pokemonId !== prevId) {
-              newCaught = addCaught(newCaught, evolved.pokemonId);
-              if (wasEgg) newHatches++;
-              else newEvolutions++;
-            }
-            return evolved;
-          });
-        } else {
-          newPool = { ...newPool, [attribute]: newPool[attribute] + earned };
+        if (!isConversationActivity) {
+          if (targetSlotId !== null) {
+            newParty = newParty.map((slot) => {
+              if (slot.slotId !== targetSlotId) return slot;
+              const prevId = slot.pokemonId;
+              const wasEgg = slot.isEgg;
+              const updated: PokemonSlot = {
+                ...slot,
+                dp: { ...slot.dp, [attribute]: slot.dp[attribute] + earned },
+                totalDpEver: slot.totalDpEver + earned,
+                lastUpdatedAt: now,
+              };
+              const evolved = checkEvolution(updated, now);
+              if (
+                evolved.pokemonId !== null &&
+                evolved.pokemonId !== 0 &&
+                evolved.pokemonId !== prevId
+              ) {
+                newCaught = addCaught(newCaught, evolved.pokemonId);
+                if (wasEgg) newHatches++;
+                else newEvolutions++;
+              }
+              return evolved;
+            });
+          } else {
+            newPool = { ...newPool, [attribute]: newPool[attribute] + earned };
+          }
         }
 
         // ===== 週間チャレンジ =====
-        const newChallenge = updateWeeklyChallenge(prev.weeklyChallenge, now, attribute, category);
-
-        // ===== カウンタ =====
-        const newActivityCount = (prev.totalActivityCount ?? 0) + 1;
-        const newEffortCount   = (prev.totalEffortCount   ?? 0) + (isEffort ? 1 : 0);
+        const finalChallenge = newChallenge;
 
         // ===== バッジ判定 =====
         const badgeCheck = {
-          effortStreak:       newStreak,
-          totalTp:            newTp,
+          effortStreak: newStreak,
+          totalTp: newTp,
           totalActivityCount: newActivityCount,
-          totalEffortCount:   newEffortCount,
-          totalHatches:       newHatches,
-          totalEvolutions:    newEvolutions,
-          caughtPokemon:      newCaught,
+          totalEffortCount: newEffortCount,
+          totalHatches: newHatches,
+          totalEvolutions: newEvolutions,
+          caughtPokemon: newCaught,
         };
         const newBadges = checkBadges(prev, badgeCheck);
 
@@ -415,19 +471,24 @@ export function usePokemonEngine() {
           unlockedSlots: newUnlocked,
           chatHistory: [activity, ...prev.chatHistory].slice(0, 100),
           caughtPokemon: newCaught,
-          effortStreak:       newStreak,
-          longestStreak:      newLongest,
-          lastEffortDate:     newLastEffortDate,
+          effortStreak: newStreak,
+          longestStreak: newLongest,
+          lastEffortDate: newLastEffortDate,
           totalActivityCount: newActivityCount,
-          totalEffortCount:   newEffortCount,
-          totalHatches:       newHatches,
-          totalEvolutions:    newEvolutions,
-          unlockedBadges:     [...(prev.unlockedBadges ?? []), ...newBadges],
-          weeklyChallenge:    newChallenge,
+          totalEffortCount: newEffortCount,
+          totalHatches: newHatches,
+          totalEvolutions: newEvolutions,
+          unlockedBadges: [...(prev.unlockedBadges ?? []), ...newBadges],
+          weeklyChallenge: finalChallenge,
         };
       });
+
+      // 技習得チェック（DP報酬獲得後）
+      if (!isConversationActivity && targetSlotId !== null && earned > 0) {
+        await checkAndLearnMoves(targetSlotId);
+      }
     },
-    [],
+    [checkAndLearnMoves],
   );
 
   const allocateFromPool = useCallback(
@@ -453,7 +514,11 @@ export function usePokemonEngine() {
             lastUpdatedAt: now,
           };
           const evolved = checkEvolution(updated, now);
-          if (evolved.pokemonId !== null && evolved.pokemonId !== 0 && evolved.pokemonId !== prevId) {
+          if (
+            evolved.pokemonId !== null &&
+            evolved.pokemonId !== 0 &&
+            evolved.pokemonId !== prevId
+          ) {
             newCaught = addCaught(newCaught, evolved.pokemonId);
             if (wasEgg) newHatches++;
             else newEvolutions++;
@@ -462,13 +527,13 @@ export function usePokemonEngine() {
         });
 
         const badgeCheck = {
-          effortStreak:       prev.effortStreak ?? 0,
-          totalTp:            prev.totalTp,
+          effortStreak: prev.effortStreak ?? 0,
+          totalTp: prev.totalTp,
           totalActivityCount: prev.totalActivityCount ?? 0,
-          totalEffortCount:   prev.totalEffortCount   ?? 0,
-          totalHatches:       newHatches,
-          totalEvolutions:    newEvolutions,
-          caughtPokemon:      newCaught,
+          totalEffortCount: prev.totalEffortCount ?? 0,
+          totalHatches: newHatches,
+          totalEvolutions: newEvolutions,
+          caughtPokemon: newCaught,
         };
         const newBadges = checkBadges(prev, badgeCheck);
 
@@ -496,9 +561,9 @@ export function usePokemonEngine() {
         ...prev,
         dpPool: {
           physical: prev.dpPool.physical + perAttr,
-          smart:    prev.dpPool.smart    + perAttr,
-          mental:   prev.dpPool.mental   + perAttr,
-          life:     prev.dpPool.life     + perAttr,
+          smart: prev.dpPool.smart + perAttr,
+          mental: prev.dpPool.mental + perAttr,
+          life: prev.dpPool.life + perAttr,
         },
         weeklyChallenge: { ...ch, rewardClaimed: true },
       };
@@ -517,14 +582,19 @@ export function usePokemonEngine() {
 
   /** 開発者モード: 任意DPを直接付与 */
   const grantDp = useCallback(
-    (targetSlotId: number | 'pool', attribute: AttributeType | 'all', amount: number) => {
+    (
+      targetSlotId: number | "pool",
+      attribute: AttributeType | "all",
+      amount: number,
+    ) => {
       const now = Date.now();
       setState((prev) => {
-        const attrs: AttributeType[] = attribute === 'all'
-          ? ['physical', 'smart', 'mental', 'life']
-          : [attribute];
+        const attrs: AttributeType[] =
+          attribute === "all"
+            ? ["physical", "smart", "mental", "life"]
+            : [attribute];
 
-        if (targetSlotId === 'pool') {
+        if (targetSlotId === "pool") {
           const newPool = { ...prev.dpPool };
           for (const a of attrs) newPool[a] += amount;
           return { ...prev, dpPool: newPool };
@@ -540,7 +610,10 @@ export function usePokemonEngine() {
           const wasEgg = slot.isEgg;
           const newDp = { ...slot.dp };
           let totalAdd = 0;
-          for (const a of attrs) { newDp[a] += amount; totalAdd += amount; }
+          for (const a of attrs) {
+            newDp[a] += amount;
+            totalAdd += amount;
+          }
           const updated: PokemonSlot = {
             ...slot,
             dp: newDp,
@@ -548,7 +621,11 @@ export function usePokemonEngine() {
             lastUpdatedAt: now,
           };
           const evolved = checkEvolution(updated, now);
-          if (evolved.pokemonId !== null && evolved.pokemonId !== 0 && evolved.pokemonId !== prevId) {
+          if (
+            evolved.pokemonId !== null &&
+            evolved.pokemonId !== 0 &&
+            evolved.pokemonId !== prevId
+          ) {
             newCaught = addCaught(newCaught, evolved.pokemonId);
             if (wasEgg) newHatches++;
             else newEvolutions++;
@@ -568,5 +645,100 @@ export function usePokemonEngine() {
     [],
   );
 
-  return { state, addActivity, allocateFromPool, claimChallengeReward, resetGame, setDecayRate, grantDp };
+  const checkAndLearnMoves = useCallback(
+    async (targetSlotId: number) => {
+      setState((prev) => {
+        const slot = prev.party.find((s) => s.slotId === targetSlotId);
+        if (!slot || slot.isEgg || !slot.pokemonId) return prev;
+
+        const currentLevel = calcLevel(slot.totalDpEver);
+        const prevLevel = getPreviousLevel(slot.totalDpEver - 1);
+
+        if (currentLevel <= prevLevel) return prev;
+
+        // 非同期処理が必要なため、ここではpendingMove をセット
+        // 実際の技習得判定は別途処理
+        return { ...prev };
+      });
+
+      // 非同期で技データを取得
+      const slot = state.party.find((s) => s.slotId === targetSlotId);
+      if (!slot || slot.isEgg || !slot.pokemonId) return;
+
+      try {
+        const allMoves = await getMovesByPokemonId(slot.pokemonId);
+        const currentLevel = calcLevel(slot.totalDpEver);
+        const newMovesAtLevel = getMovesForLevel(allMoves, currentLevel);
+
+        for (const newMove of newMovesAtLevel) {
+          if (!slot.learnedMoves.includes(newMove)) {
+            if (slot.learnedMoves.length < 4) {
+              // 自動習得
+              setState((prev) => ({
+                ...prev,
+                party: prev.party.map((s) =>
+                  s.slotId === targetSlotId
+                    ? { ...s, learnedMoves: [...s.learnedMoves, newMove] }
+                    : s,
+                ),
+              }));
+            } else {
+              // モーダル表示
+              setState((prev) => ({
+                ...prev,
+                pendingMove: newMove,
+                pendingMoveSlotId: targetSlotId,
+              }));
+              break; // 最初の新技のみ処理
+            }
+          }
+        }
+      } catch (e) {
+        console.error("技データ取得エラー:", e);
+      }
+    },
+    [state.party],
+  );
+
+  const forgetMove = useCallback((moveToForgot: string) => {
+    setState((prev) => {
+      if (!prev.pendingMove || prev.pendingMoveSlotId === null) return prev;
+
+      const newParty = prev.party.map((slot) => {
+        if (slot.slotId !== prev.pendingMoveSlotId) return slot;
+        const newMoves = slot.learnedMoves
+          .filter((m) => m !== moveToForgot)
+          .concat([prev.pendingMove]);
+        return { ...slot, learnedMoves: newMoves };
+      });
+
+      return {
+        ...prev,
+        party: newParty,
+        pendingMove: null,
+        pendingMoveSlotId: null,
+      };
+    });
+  }, []);
+
+  const cancelPendingMove = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      pendingMove: null,
+      pendingMoveSlotId: null,
+    }));
+  }, []);
+
+  return {
+    state,
+    addActivity,
+    allocateFromPool,
+    claimChallengeReward,
+    resetGame,
+    setDecayRate,
+    grantDp,
+    checkAndLearnMoves,
+    forgetMove,
+    cancelPendingMove,
+  };
 }

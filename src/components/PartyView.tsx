@@ -1,34 +1,50 @@
-import { useState } from 'react';
-import type { GameState, PokemonSlot, AttributeType, ActivityCategory } from '../types';
-import { ATTRIBUTE_COLORS, HATCH_THRESHOLD, TP_SLOT_THRESHOLDS } from '../types';
-import { getPokemonName } from '../data/pokemonNames';
-import { getEvolutionEntry } from '../data/evolutionTable';
-import { DpPoolPanel } from './DpPoolPanel';
-import { PokemonChat } from './PokemonChat';
-import { PokemonDex } from './PokemonDex';
-import { animatedSpriteUrl, onSpriteError } from '../utils/spriteUrl';
+import { useState } from "react";
+import type {
+  GameState,
+  PokemonSlot,
+  AttributeType,
+  ActivityCategory,
+} from "../types";
+import {
+  ATTRIBUTE_COLORS,
+  HATCH_THRESHOLD,
+  TP_SLOT_THRESHOLDS,
+} from "../types";
+import { getPokemonName } from "../data/pokemonNames";
+import { getEvolutionEntry } from "../data/evolutionTable";
+import { DpPoolPanel } from "./DpPoolPanel";
+import { PokemonChat } from "./PokemonChat";
+import { PokemonDex } from "./PokemonDex";
+import { animatedSpriteUrl, onSpriteError } from "../utils/spriteUrl";
 
-type CardMode = 'normal' | 'chat' | 'dex';
+type CardMode = "normal" | "chat" | "dex";
 
 interface Props {
   state: GameState;
-  onAllocate: (slotId: number, attribute: AttributeType, amount: number) => void;
+  onAllocate: (
+    slotId: number,
+    attribute: AttributeType,
+    amount: number,
+  ) => void;
   onAddActivity: (
     text: string,
     attribute: AttributeType,
     category: ActivityCategory,
     targetSlotId: number | null,
     pokemonResponse?: string,
+    isConversation?: boolean,
   ) => void;
   onClaimReward: () => void;
+  onForgetMove?: (moveToForgot: string) => void;
+  onCancelPendingMove?: () => void;
 }
 
-const ATTRS: AttributeType[] = ['physical', 'smart', 'mental', 'life'];
+const ATTRS: AttributeType[] = ["physical", "smart", "mental", "life"];
 const ATTR_LABEL: Record<AttributeType, string> = {
-  physical: 'フィジカル',
-  smart: 'スマート',
-  mental: 'メンタル',
-  life: 'ライフ',
+  physical: "フィジカル",
+  smart: "スマート",
+  mental: "メンタル",
+  life: "ライフ",
 };
 
 function PokemonCard({
@@ -37,18 +53,29 @@ function PokemonCard({
   onAllocate,
   onAddActivity,
   onClaimReward,
+  onForgetMove,
+  onCancelPendingMove,
 }: {
   slot: PokemonSlot;
   state: GameState;
   onAllocate: (slotId: number, attr: AttributeType, amt: number) => void;
-  onAddActivity: (text: string, attr: AttributeType, cat: ActivityCategory, targetSlotId: number | null, response?: string) => void;
+  onAddActivity: (
+    text: string,
+    attr: AttributeType,
+    cat: ActivityCategory,
+    targetSlotId: number | null,
+    response?: string,
+    isConversation?: boolean,
+  ) => void;
   onClaimReward: () => void;
+  onForgetMove?: (moveToForgot: string) => void;
+  onCancelPendingMove?: () => void;
 }) {
-  const [mode, setMode] = useState<CardMode>('normal');
+  const [mode, setMode] = useState<CardMode>("normal");
   const [showAllocate, setShowAllocate] = useState(false);
 
   const isEgg = slot.isEgg || slot.pokemonId === 0;
-  const name = isEgg ? 'タマゴ' : getPokemonName(slot.pokemonId ?? 0);
+  const name = isEgg ? "タマゴ" : getPokemonName(slot.pokemonId ?? 0);
   const totalDp = ATTRS.reduce((s, k) => s + slot.dp[k], 0);
   const maxDp = Math.max(totalDp, 100);
   const hasPool = ATTRS.some((a) => state.dpPool[a] > 0);
@@ -57,7 +84,7 @@ function PokemonCard({
   const nextEvolutions = evolutionEntry?.evolvesTo ?? null;
 
   function toggleMode(target: CardMode) {
-    setMode((prev) => (prev === target ? 'normal' : target));
+    setMode((prev) => (prev === target ? "normal" : target));
     setShowAllocate(false);
   }
 
@@ -86,49 +113,54 @@ function PokemonCard({
       {/* アクションボタン行 */}
       <div className="pokemon-card__actions">
         <button
-          className={`pokemon-card__action-btn${mode === 'chat' ? ' active' : ''}`}
-          onClick={() => toggleMode('chat')}
+          className={`pokemon-card__action-btn${mode === "chat" ? " active" : ""}`}
+          onClick={() => toggleMode("chat")}
         >
-          💬 {mode === 'chat' ? '閉じる' : '話しかける'}
+          💬 {mode === "chat" ? "閉じる" : "話しかける"}
         </button>
         {!isEgg && (
           <button
-            className={`pokemon-card__action-btn pokemon-card__action-btn--dex${mode === 'dex' ? ' active' : ''}`}
-            onClick={() => toggleMode('dex')}
+            className={`pokemon-card__action-btn pokemon-card__action-btn--dex${mode === "dex" ? " active" : ""}`}
+            onClick={() => toggleMode("dex")}
           >
-            📖 {mode === 'dex' ? '閉じる' : '図鑑'}
+            📖 {mode === "dex" ? "閉じる" : "図鑑"}
           </button>
         )}
       </div>
 
       {/* ===== チャットモード ===== */}
-      {mode === 'chat' && (
+      {mode === "chat" && (
         <PokemonChat
           slot={slot}
           state={state}
           onAddActivity={onAddActivity}
           onClaimReward={onClaimReward}
+          onForgetMove={onForgetMove}
+          onCancelPendingMove={onCancelPendingMove}
         />
       )}
 
       {/* ===== 図鑑モード ===== */}
-      {mode === 'dex' && !isEgg && slot.pokemonId !== null && (
+      {mode === "dex" && !isEgg && slot.pokemonId !== null && (
         <PokemonDex pokemonId={slot.pokemonId} />
       )}
 
       {/* ===== 通常モード（DP・進化条件） ===== */}
-      {mode === 'normal' && (
+      {mode === "normal" && (
         <>
           {/* 卵: 孵化進捗 */}
           {isEgg && (
             <div className="pokemon-card__hatch">
               <div className="pokemon-card__hatch-label">
-                孵化まであと {Math.max(0, HATCH_THRESHOLD - slot.totalDpEver).toFixed(1)} DP
+                孵化まであと{" "}
+                {Math.max(0, HATCH_THRESHOLD - slot.totalDpEver).toFixed(1)} DP
               </div>
               <div className="pokemon-card__hatch-track">
                 <div
                   className="pokemon-card__hatch-fill"
-                  style={{ width: `${Math.min((slot.totalDpEver / HATCH_THRESHOLD) * 100, 100)}%` }}
+                  style={{
+                    width: `${Math.min((slot.totalDpEver / HATCH_THRESHOLD) * 100, 100)}%`,
+                  }}
                 />
               </div>
               <div className="pokemon-card__hatch-num">
@@ -160,11 +192,15 @@ function PokemonCard({
                       }}
                     />
                   </div>
-                  <span className="pokemon-card__stat-val">{Math.floor(val)}</span>
+                  <span className="pokemon-card__stat-val">
+                    {Math.floor(val)}
+                  </span>
                 </div>
               );
             })}
-            <div className="pokemon-card__affection">なつき度: {Math.floor(slot.totalDpEver)}</div>
+            <div className="pokemon-card__affection">
+              なつき度: {Math.floor(slot.totalDpEver)}
+            </div>
           </div>
 
           {/* 進化条件 */}
@@ -174,19 +210,55 @@ function PokemonCard({
               {nextEvolutions.map((target) => {
                 const cond = target.conditions;
                 const checks: { label: string; met: boolean }[] = [];
-                if (cond.minPhysical)  checks.push({ label: `フィジカル ${cond.minPhysical}`, met: slot.dp.physical  >= cond.minPhysical });
-                if (cond.minSmart)     checks.push({ label: `スマート ${cond.minSmart}`,      met: slot.dp.smart     >= cond.minSmart });
-                if (cond.minMental)    checks.push({ label: `メンタル ${cond.minMental}`,     met: slot.dp.mental    >= cond.minMental });
-                if (cond.minLife)      checks.push({ label: `ライフ ${cond.minLife}`,         met: slot.dp.life      >= cond.minLife });
-                if (cond.minAffection) checks.push({ label: `なつき度 ${cond.minAffection}`,  met: slot.totalDpEver  >= (cond.minAffection ?? 0) });
-                if (cond.timeOfDay)    checks.push({ label: cond.timeOfDay === 'day' ? '昼に活動' : '夜に活動', met: false });
-                if (cond.bias)         checks.push({ label: `${ATTR_LABEL[cond.bias.dominant]}が高い`, met: false });
+                if (cond.minPhysical)
+                  checks.push({
+                    label: `フィジカル ${cond.minPhysical}`,
+                    met: slot.dp.physical >= cond.minPhysical,
+                  });
+                if (cond.minSmart)
+                  checks.push({
+                    label: `スマート ${cond.minSmart}`,
+                    met: slot.dp.smart >= cond.minSmart,
+                  });
+                if (cond.minMental)
+                  checks.push({
+                    label: `メンタル ${cond.minMental}`,
+                    met: slot.dp.mental >= cond.minMental,
+                  });
+                if (cond.minLife)
+                  checks.push({
+                    label: `ライフ ${cond.minLife}`,
+                    met: slot.dp.life >= cond.minLife,
+                  });
+                if (cond.minAffection)
+                  checks.push({
+                    label: `なつき度 ${cond.minAffection}`,
+                    met: slot.totalDpEver >= (cond.minAffection ?? 0),
+                  });
+                if (cond.timeOfDay)
+                  checks.push({
+                    label: cond.timeOfDay === "day" ? "昼に活動" : "夜に活動",
+                    met: false,
+                  });
+                if (cond.bias)
+                  checks.push({
+                    label: `${ATTR_LABEL[cond.bias.dominant]}が高い`,
+                    met: false,
+                  });
                 return (
-                  <div key={target.targetId} className="pokemon-card__evo-entry">
-                    <div className="pokemon-card__evo-name">→ {getPokemonName(target.targetId)}</div>
+                  <div
+                    key={target.targetId}
+                    className="pokemon-card__evo-entry"
+                  >
+                    <div className="pokemon-card__evo-name">
+                      → {getPokemonName(target.targetId)}
+                    </div>
                     {checks.map((c, i) => (
-                      <div key={i} className={`pokemon-card__evo-cond${c.met ? ' met' : ''}`}>
-                        {c.met ? '✅' : '○'} {c.label}
+                      <div
+                        key={i}
+                        className={`pokemon-card__evo-cond${c.met ? " met" : ""}`}
+                      >
+                        {c.met ? "✅" : "○"} {c.label}
                       </div>
                     ))}
                   </div>
@@ -207,13 +279,15 @@ function PokemonCard({
                 className="pokemon-card__allocate-btn"
                 onClick={() => setShowAllocate((v) => !v)}
               >
-                {showAllocate ? '▲ 閉じる' : '▼ DPプールから配分する'}
+                {showAllocate ? "▲ 閉じる" : "▼ DPプールから配分する"}
               </button>
               {showAllocate && (
                 <DpPoolPanel
                   state={state}
                   selectedSlotId={slot.slotId}
-                  onAllocate={(_, attr, amt) => onAllocate(slot.slotId, attr, amt)}
+                  onAllocate={(_, attr, amt) =>
+                    onAllocate(slot.slotId, attr, amt)
+                  }
                 />
               )}
             </div>
@@ -224,7 +298,12 @@ function PokemonCard({
   );
 }
 
-export function PartyView({ state, onAllocate, onAddActivity, onClaimReward }: Props) {
+export function PartyView({
+  state,
+  onAllocate,
+  onAddActivity,
+  onClaimReward,
+}: Props) {
   const { party, unlockedSlots, totalTp } = state;
   const unlockedParty = party.slice(0, unlockedSlots);
   const [index, setIndex] = useState(0);
@@ -245,9 +324,9 @@ export function PartyView({ state, onAllocate, onAddActivity, onClaimReward }: P
             return (
               <button
                 key={s.slotId}
-                className={`party-nav__icon${isSelected ? ' party-nav__icon--active' : ''}`}
+                className={`party-nav__icon${isSelected ? " party-nav__icon--active" : ""}`}
                 onClick={() => setIndex(i)}
-                aria-label={isEgg ? 'タマゴ' : getPokemonName(s.pokemonId ?? 0)}
+                aria-label={isEgg ? "タマゴ" : getPokemonName(s.pokemonId ?? 0)}
               >
                 {isEgg ? (
                   <span className="party-nav__icon-egg">🥚</span>
@@ -272,13 +351,17 @@ export function PartyView({ state, onAllocate, onAddActivity, onClaimReward }: P
           onAllocate={onAllocate}
           onAddActivity={onAddActivity}
           onClaimReward={onClaimReward}
+          onForgetMove={onForgetMove}
+          onCancelPendingMove={onCancelPendingMove}
         />
       )}
 
       {tpToNext !== null && tpToNext > 0 && (
         <div className="party-view__unlock-hint">
-          次のスロット解放まであと{' '}
-          <span className="party-view__unlock-tp">{Math.ceil(tpToNext)} TP</span>
+          次のスロット解放まであと{" "}
+          <span className="party-view__unlock-tp">
+            {Math.ceil(tpToNext)} TP
+          </span>
         </div>
       )}
       {unlockedSlots >= 6 && (

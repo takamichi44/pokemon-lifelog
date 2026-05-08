@@ -1,14 +1,20 @@
-import { useState, useRef, useEffect } from 'react';
-import type { AttributeType, ActivityCategory, GameState } from '../types';
+import { useState, useRef, useEffect } from "react";
+import type { AttributeType, ActivityCategory, GameState } from "../types";
 import {
-  ATTRIBUTE_COLORS, ATTRIBUTE_LABELS, CATEGORY_LABELS,
+  ATTRIBUTE_COLORS,
+  ATTRIBUTE_LABELS,
+  CATEGORY_LABELS,
   CATEGORY_COEFFICIENTS,
-} from '../types';
-import { getPokemonName } from '../data/pokemonNames';
-import { classifyActivity, respondToActivity } from '../services/geminiService';
-import { getStreakMultiplier } from '../hooks/usePokemonEngine';
-import { getChallengeDefinition, getMondayTimestamp } from '../data/weeklyChallenges';
-import type { WeeklyChallenge } from '../types';
+} from "../types";
+import { getPokemonName } from "../data/pokemonNames";
+import { classifyActivity, respondToActivity } from "../services/geminiService";
+import { getStreakMultiplier } from "../hooks/usePokemonEngine";
+import {
+  getChallengeDefinition,
+  getMondayTimestamp,
+} from "../data/weeklyChallenges";
+import { MoveSelectionModal } from "./MoveSelectionModal";
+import type { WeeklyChallenge } from "../types";
 
 interface Props {
   state: GameState;
@@ -20,30 +26,35 @@ interface Props {
     pokemonResponse?: string,
   ) => void;
   onClaimReward: () => void;
+  onForgetMove?: (moveToForgot: string) => void;
+  onCancelPendingMove?: () => void;
 }
 
-const ATTRS: AttributeType[] = ['physical', 'smart', 'mental', 'life'];
-const CAT_KEYS: ActivityCategory[] = ['effort', 'daily'];
+const ATTRS: AttributeType[] = ["physical", "smart", "mental", "life"];
+const CAT_KEYS: ActivityCategory[] = ["effort", "daily"];
 
 // AI off のとき使うテンプレート返答
 const TEMPLATE: Record<ActivityCategory, string[]> = {
   effort: [
-    'すごい！ぼくとっても嬉しいよ！次も絶対できるよ！',
-    'わあ、えらい！トレーナーならできるって思ってた！',
-    'かっこいい！ぼくも応援してるから、もっとやれるよ！',
-    'すごいすごい！一緒に頑張ろう！',
+    "すごい！ぼくとっても嬉しいよ！次も絶対できるよ！",
+    "わあ、えらい！トレーナーならできるって思ってた！",
+    "かっこいい！ぼくも応援してるから、もっとやれるよ！",
+    "すごいすごい！一緒に頑張ろう！",
   ],
   daily: [
-    '毎日こつこつって、すごく大事なことだよ。えらいね。',
-    '今日もお疲れさま！ゆっくり休んでね。',
-    'こういう積み重ねが大切なんだってぼく知ってるよ！',
-    '毎日ちゃんとやってて、ぼく感動してるよ。',
+    "毎日こつこつって、すごく大事なことだよ。えらいね。",
+    "今日もお疲れさま！ゆっくり休んでね。",
+    "こういう積み重ねが大切なんだってぼく知ってるよ！",
+    "毎日ちゃんとやってて、ぼく感動してるよ。",
   ],
 };
 
 function getTemplate(cat: ActivityCategory, slotName: string): string {
   const arr = TEMPLATE[cat];
-  return arr[Math.floor(Math.random() * arr.length)].replace('ぼく', slotName.length <= 4 ? 'ぼく' : 'わたし');
+  return arr[Math.floor(Math.random() * arr.length)].replace(
+    "ぼく",
+    slotName.length <= 4 ? "ぼく" : "わたし",
+  );
 }
 
 function officialArtUrl(id: number) {
@@ -52,11 +63,19 @@ function officialArtUrl(id: number) {
 
 function getTodayStr() {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 // ===== Compact streak bar =====
-function StreakBar({ streak, multiplier, isFirstToday }: { streak: number; multiplier: number; isFirstToday: boolean }) {
+function StreakBar({
+  streak,
+  multiplier,
+  isFirstToday,
+}: {
+  streak: number;
+  multiplier: number;
+  isFirstToday: boolean;
+}) {
   return (
     <div className="streak-bar">
       <span className="streak-bar__fire">🔥</span>
@@ -65,15 +84,19 @@ function StreakBar({ streak, multiplier, isFirstToday }: { streak: number; multi
       {multiplier > 1.0 && (
         <span className="streak-bar__mult">×{multiplier.toFixed(1)}</span>
       )}
-      {isFirstToday && (
-        <span className="streak-bar__bonus">今日最初 +30%</span>
-      )}
+      {isFirstToday && <span className="streak-bar__bonus">今日最初 +30%</span>}
     </div>
   );
 }
 
 // ===== Compact challenge bar =====
-function ChallengeBar({ challenge, onClaim }: { challenge: WeeklyChallenge | null; onClaim: () => void }) {
+function ChallengeBar({
+  challenge,
+  onClaim,
+}: {
+  challenge: WeeklyChallenge | null;
+  onClaim: () => void;
+}) {
   if (!challenge) return null;
   const def = getChallengeDefinition(challenge.challengeTypeIndex);
   const pct = Math.min((challenge.current / def.target) * 100, 100);
@@ -84,14 +107,18 @@ function ChallengeBar({ challenge, onClaim }: { challenge: WeeklyChallenge | nul
   if (challenge.weekStart !== currentWeekStart && !canClaim) return null;
 
   return (
-    <div className={`challenge-bar${challenge.completed ? ' challenge-bar--done' : ''}`}>
+    <div
+      className={`challenge-bar${challenge.completed ? " challenge-bar--done" : ""}`}
+    >
       <span className="challenge-bar__icon">{def.icon}</span>
       <div className="challenge-bar__body">
         <span className="challenge-bar__title">{def.title}</span>
         <div className="challenge-bar__track">
           <div className="challenge-bar__fill" style={{ width: `${pct}%` }} />
         </div>
-        <span className="challenge-bar__num">{challenge.current}/{def.target}</span>
+        <span className="challenge-bar__num">
+          {challenge.current}/{def.target}
+        </span>
       </div>
       {canClaim ? (
         <button className="challenge-bar__claim" onClick={onClaim}>
@@ -106,32 +133,44 @@ function ChallengeBar({ challenge, onClaim }: { challenge: WeeklyChallenge | nul
   );
 }
 
-export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
+export function ActivityView({
+  state,
+  onSubmit,
+  onClaimReward,
+  onForgetMove,
+  onCancelPendingMove,
+}: Props) {
   const party = state.party.slice(0, state.unlockedSlots);
 
-  const [selectedSlotId, setSelectedSlotId] = useState(() => party[0]?.slotId ?? 0);
-  const [text, setText] = useState('');
+  const [selectedSlotId, setSelectedSlotId] = useState(
+    () => party[0]?.slotId ?? 0,
+  );
+  const [text, setText] = useState("");
   const [toPool, setToPool] = useState(false);
   const [useAi, setUseAi] = useState(true);
-  const [attribute, setAttribute] = useState<AttributeType>('physical');
-  const [category, setCategory] = useState<ActivityCategory>('effort');
+  const [attribute, setAttribute] = useState<AttributeType>("physical");
+  const [category, setCategory] = useState<ActivityCategory>("effort");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  const currentSlot = party.find((s) => s.slotId === selectedSlotId) ?? party[0];
-  const isEgg = !currentSlot || currentSlot.isEgg || currentSlot.pokemonId === 0;
-  const pokemonName = isEgg ? 'タマゴ' : getPokemonName(currentSlot?.pokemonId ?? 0);
+  const currentSlot =
+    party.find((s) => s.slotId === selectedSlotId) ?? party[0];
+  const isEgg =
+    !currentSlot || currentSlot.isEgg || currentSlot.pokemonId === 0;
+  const pokemonName = isEgg
+    ? "タマゴ"
+    : getPokemonName(currentSlot?.pokemonId ?? 0);
 
   const streak = state.effortStreak ?? 0;
   const multiplier = getStreakMultiplier(streak);
   const todayStr = getTodayStr();
-  const isFirstToday = (state.lastEffortDate ?? '') !== todayStr;
+  const isFirstToday = (state.lastEffortDate ?? "") !== todayStr;
 
   // scroll to bottom when new messages arrive
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [state.chatHistory.length]);
 
   async function handleSubmit() {
@@ -151,26 +190,37 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
         finalCat = result.category;
 
         if (!isEgg && currentSlot?.pokemonId) {
-          pokemonResponse = await respondToActivity(currentSlot, trimmed, finalAttr, finalCat);
+          pokemonResponse = await respondToActivity(
+            currentSlot,
+            trimmed,
+            finalAttr,
+            finalCat,
+          );
         } else if (isEgg) {
-          pokemonResponse = '🥚 ……（タマゴが温かく震えている）';
+          pokemonResponse = "🥚 ……（タマゴが温かく震えている）";
         }
       } else {
         pokemonResponse = getTemplate(finalCat, pokemonName);
       }
 
-      onSubmit(trimmed, finalAttr, finalCat, toPool ? null : (currentSlot?.slotId ?? null), pokemonResponse);
-      setText('');
+      onSubmit(
+        trimmed,
+        finalAttr,
+        finalCat,
+        toPool ? null : (currentSlot?.slotId ?? null),
+        pokemonResponse,
+      );
+      setText("");
       textareaRef.current?.focus();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'エラーが発生しました');
+      setError(e instanceof Error ? e.message : "エラーが発生しました");
     } finally {
       setLoading(false);
     }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
@@ -183,8 +233,15 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
     <div className="activity-view">
       {/* ===== 固定ヘッダー ===== */}
       <div className="activity-view__header">
-        <StreakBar streak={streak} multiplier={multiplier} isFirstToday={isFirstToday && streak > 0} />
-        <ChallengeBar challenge={state.weeklyChallenge ?? null} onClaim={onClaimReward} />
+        <StreakBar
+          streak={streak}
+          multiplier={multiplier}
+          isFirstToday={isFirstToday && streak > 0}
+        />
+        <ChallengeBar
+          challenge={state.weeklyChallenge ?? null}
+          onClaim={onClaimReward}
+        />
       </div>
 
       {/* ===== パーティセレクター ===== */}
@@ -196,9 +253,11 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
             return (
               <button
                 key={slot.slotId}
-                className={`activity-party-nav__btn${active ? ' active' : ''}`}
+                className={`activity-party-nav__btn${active ? " active" : ""}`}
                 onClick={() => setSelectedSlotId(slot.slotId)}
-                aria-label={egg ? 'タマゴ' : getPokemonName(slot.pokemonId ?? 0)}
+                aria-label={
+                  egg ? "タマゴ" : getPokemonName(slot.pokemonId ?? 0)
+                }
               >
                 {egg ? (
                   <span className="activity-party-nav__egg">🥚</span>
@@ -236,7 +295,7 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
             <div className="activity-chat__intro-name">{pokemonName}</div>
             <div className="activity-chat__intro-hint">
               {isEgg
-                ? 'タマゴに話しかけてみよう。孵化が近づくよ！'
+                ? "タマゴに話しかけてみよう。孵化が近づくよ！"
                 : `今日何をしたか${pokemonName}に話しかけてみよう！`}
             </div>
           </div>
@@ -244,11 +303,17 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
 
         {/* メッセージ一覧 */}
         {messages.map((act) => {
-          const responderSlot = act.targetSlotId !== null
-            ? state.party.find((s) => s.slotId === act.targetSlotId)
-            : currentSlot;
-          const responderIsEgg = !responderSlot || responderSlot.isEgg || responderSlot.pokemonId === 0;
-          const responderName = responderIsEgg ? 'タマゴ' : getPokemonName(responderSlot?.pokemonId ?? 0);
+          const responderSlot =
+            act.targetSlotId !== null
+              ? state.party.find((s) => s.slotId === act.targetSlotId)
+              : currentSlot;
+          const responderIsEgg =
+            !responderSlot ||
+            responderSlot.isEgg ||
+            responderSlot.pokemonId === 0;
+          const responderName = responderIsEgg
+            ? "タマゴ"
+            : getPokemonName(responderSlot?.pokemonId ?? 0);
 
           return (
             <div key={act.id} className="activity-msg-pair">
@@ -260,10 +325,16 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
                     <span style={{ color: ATTRIBUTE_COLORS[act.attribute] }}>
                       {ATTRIBUTE_LABELS[act.attribute]}
                     </span>
-                    <span className="activity-msg__cat">{CATEGORY_LABELS[act.category]}</span>
-                    <span className="activity-msg__dp">+{act.earnedDp.toFixed(1)} DP</span>
+                    <span className="activity-msg__cat">
+                      {CATEGORY_LABELS[act.category]}
+                    </span>
+                    <span className="activity-msg__dp">
+                      +{act.earnedDp.toFixed(1)} DP
+                    </span>
                     <span className="activity-msg__target">
-                      {act.targetSlotId !== null ? `→ ${responderName}` : '→ プール'}
+                      {act.targetSlotId !== null
+                        ? `→ ${responderName}`
+                        : "→ プール"}
                     </span>
                   </div>
                 </div>
@@ -284,8 +355,12 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
                     )}
                   </div>
                   <div className="activity-msg__bubble activity-msg__bubble--pokemon">
-                    <div className="activity-msg__pokemon-name">{responderName}</div>
-                    <div className="activity-msg__text">{act.pokemonResponse}</div>
+                    <div className="activity-msg__pokemon-name">
+                      {responderName}
+                    </div>
+                    <div className="activity-msg__text">
+                      {act.pokemonResponse}
+                    </div>
                   </div>
                 </div>
               )}
@@ -299,11 +374,32 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
       {/* ===== エラー ===== */}
       {error && <div className="chat-error">⚠️ {error}</div>}
 
+      {/* ===== 技習得モーダル ===== */}
+      {state.pendingMove && state.pendingMoveSlotId !== null && (
+        <MoveSelectionModal
+          newMove={state.pendingMove}
+          currentMoves={
+            state.party.find((s) => s.slotId === state.pendingMoveSlotId)
+              ?.learnedMoves ?? []
+          }
+          onConfirm={(moveToForgot) => {
+            onForgetMove?.(moveToForgot);
+          }}
+          onCancel={() => {
+            onCancelPendingMove?.();
+          }}
+        />
+      )}
+
       {/* ===== 入力エリア ===== */}
       <div className="activity-input">
         <div className="activity-input__controls">
           <label className="activity-input__toggle">
-            <input type="checkbox" checked={useAi} onChange={(e) => setUseAi(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={useAi}
+              onChange={(e) => setUseAi(e.target.checked)}
+            />
             <span>AI分類</span>
           </label>
 
@@ -315,13 +411,17 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
                 onChange={(e) => setAttribute(e.target.value as AttributeType)}
               >
                 {ATTRS.map((a) => (
-                  <option key={a} value={a}>{ATTRIBUTE_LABELS[a]}</option>
+                  <option key={a} value={a}>
+                    {ATTRIBUTE_LABELS[a]}
+                  </option>
                 ))}
               </select>
               <select
                 className="activity-input__select"
                 value={category}
-                onChange={(e) => setCategory(e.target.value as ActivityCategory)}
+                onChange={(e) =>
+                  setCategory(e.target.value as ActivityCategory)
+                }
               >
                 {CAT_KEYS.map((c) => (
                   <option key={c} value={c}>
@@ -333,7 +433,11 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
           )}
 
           <label className="activity-input__toggle activity-input__toggle--pool">
-            <input type="checkbox" checked={toPool} onChange={(e) => setToPool(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={toPool}
+              onChange={(e) => setToPool(e.target.checked)}
+            />
             <span>📦 プールへ</span>
           </label>
         </div>
@@ -345,7 +449,7 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
             rows={2}
             placeholder={
               isEgg
-                ? 'タマゴに話しかける… (Enter送信)'
+                ? "タマゴに話しかける… (Enter送信)"
                 : `${pokemonName}に話しかける… (Enter送信)`
             }
             value={text}
@@ -358,16 +462,17 @@ export function ActivityView({ state, onSubmit, onClaimReward }: Props) {
             onClick={handleSubmit}
             disabled={loading || !text.trim()}
           >
-            {loading ? '⏳' : '送信'}
+            {loading ? "⏳" : "送信"}
           </button>
         </div>
 
         {/* ボーナス表示 */}
         {(multiplier > 1.0 || isFirstToday) && (
           <div className="activity-input__bonus-hint">
-            {multiplier > 1.0 && `🔥 ${streak}日ストリーク中 → ×${multiplier.toFixed(1)}`}
-            {multiplier > 1.0 && isFirstToday && '  +  '}
-            {isFirstToday && '✨ 今日最初の努力 +30%'}
+            {multiplier > 1.0 &&
+              `🔥 ${streak}日ストリーク中 → ×${multiplier.toFixed(1)}`}
+            {multiplier > 1.0 && isFirstToday && "  +  "}
+            {isFirstToday && "✨ 今日最初の努力 +30%"}
           </div>
         )}
       </div>

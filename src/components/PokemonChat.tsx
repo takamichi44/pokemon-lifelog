@@ -6,6 +6,7 @@ import { classifyActivity, respondToActivity, respondToConversation } from '../s
 import { animatedSpriteUrl, onSpriteError } from '../utils/spriteUrl';
 import { getStreakMultiplier } from '../hooks/usePokemonEngine';
 import { getChallengeDefinition } from '../data/weeklyChallenges';
+import { MoveSelectionModal } from './MoveSelectionModal';
 
 interface Props {
   slot: PokemonSlot;
@@ -16,8 +17,11 @@ interface Props {
     category: ActivityCategory,
     targetSlotId: number | null,
     pokemonResponse?: string,
+    isConversation?: boolean,
   ) => void;
   onClaimReward: () => void;
+  onForgetMove?: (moveToForgot: string) => void;
+  onCancelPendingMove?: () => void;
 }
 
 const ATTRS: AttributeType[] = ['physical', 'smart', 'mental', 'life'];
@@ -49,7 +53,7 @@ function getTodayStr() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
-export function PokemonChat({ slot, state, onAddActivity, onClaimReward }: Props) {
+export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForgetMove, onCancelPendingMove }: Props) {
   const isEgg = slot.isEgg || slot.pokemonId === 0;
   const name = isEgg ? 'タマゴ' : getPokemonName(slot.pokemonId ?? 0);
 
@@ -63,9 +67,9 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward }: Props
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // このスロット宛の活動を古い順に並べる
+  // このスロット宛の活動と雑談（targetSlotId=null）を古い順に並べる
   const allForSlot = [...state.chatHistory]
-    .filter((a) => a.targetSlotId === slot.slotId)
+    .filter((a) => a.targetSlotId === slot.slotId || a.targetSlotId === null)
     .reverse();
 
   const streak = state.effortStreak ?? 0;
@@ -98,14 +102,8 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward }: Props
           } else {
             response = '🥚 ……（タマゴがかすかに揺れている）';
           }
-          // チャット履歴に「会話」として追加（DP=0）
-          onAddActivity(text, 'life', 'daily', null, response);
-          setInput('');
-          inputRef.current?.focus();
-          return;
-        }
-
-        finalAttr = result.attribute;
+            // チャット履歴に「会話」として追加（DP/TPなし）
+            onAddActivity(text, 'life', 'daily', null, response, true);
         finalCat = result.category;
 
         if (!isEgg && slot.pokemonId) {
@@ -265,6 +263,20 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward }: Props
         {error && <div className="pokemon-chat__error">⚠️ {error}</div>}
         <div ref={bottomRef} />
       </div>
+
+      {/* ===== 技習得モーダル ===== */}
+      {state.pendingMove && state.pendingMoveSlotId !== null && (
+        <MoveSelectionModal
+          newMove={state.pendingMove}
+          currentMoves={state.party.find((s) => s.slotId === state.pendingMoveSlotId)?.learnedMoves ?? []}
+          onConfirm={(moveToForgot) => {
+            onForgetMove?.(moveToForgot);
+          }}
+          onCancel={() => {
+            onCancelPendingMove?.();
+          }}
+        />
+      )}
 
       {/* ===== 入力フォーム ===== */}
       <div className="pokemon-chat__form">
