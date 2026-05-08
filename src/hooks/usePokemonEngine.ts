@@ -6,11 +6,9 @@ import type {
   AttributeType,
   ActivityCategory,
 } from "../types";
-import {
-  BASE_DP_PER_ACTIVITY,
-  CATEGORY_COEFFICIENTS,
-} from "../types";
+import { BASE_DP_PER_ACTIVITY, CATEGORY_COEFFICIENTS } from "../types";
 import { getChallengeDefinition } from "../data/weeklyChallenges";
+import { getBadgeById } from "../data/badges";
 import { useMoveSystem } from "./useMoveSystem";
 import {
   getStreakMultiplier,
@@ -27,10 +25,7 @@ import {
   updateWeeklyChallenge,
   spendDpFromPool,
 } from "../utils/gameLogic";
-import {
-  DECORATION_CATALOG,
-  ACCESSORY_MAX,
-} from "../data/decorationCatalog";
+import { DECORATION_CATALOG, ACCESSORY_MAX } from "../data/decorationCatalog";
 import type { DecorationCategory } from "../types";
 
 // getStreakMultiplier は他コンポーネントから import されているため再エクスポート
@@ -150,7 +145,8 @@ export function usePokemonEngine() {
             }
           }
 
-          const baseEarned = BASE_DP_PER_ACTIVITY * CATEGORY_COEFFICIENTS[category];
+          const baseEarned =
+            BASE_DP_PER_ACTIVITY * CATEGORY_COEFFICIENTS[category];
           earned = Math.round(baseEarned * multiplier * 10) / 10;
 
           newChallenge = updateWeeklyChallenge(
@@ -225,6 +221,21 @@ export function usePokemonEngine() {
         };
         const newBadges = checkBadges(prev, badgeCheck);
 
+        // バッジ解放時のDP報酬をプールに配分
+        for (const badgeId of newBadges) {
+          const badgeDef = getBadgeById(badgeId);
+          if (badgeDef?.rewardDp) {
+            const perAttr = badgeDef.rewardDp / 4;
+            newPool = {
+              ...newPool,
+              physical: newPool.physical + perAttr,
+              smart: newPool.smart + perAttr,
+              mental: newPool.mental + perAttr,
+              life: newPool.life + perAttr,
+            };
+          }
+        }
+
         return {
           ...prev,
           party: newParty.map((slot, i) =>
@@ -259,7 +270,7 @@ export function usePokemonEngine() {
   );
 
   const allocateFromPool = useCallback(
-    (targetSlotId: number, attribute: AttributeType, amount: number) => {
+    async (targetSlotId: number, attribute: AttributeType, amount: number) => {
       const now = Date.now();
       setState((prev) => {
         const available = prev.dpPool[attribute];
@@ -304,9 +315,25 @@ export function usePokemonEngine() {
         };
         const newBadges = checkBadges(prev, badgeCheck);
 
+        // バッジ解放時のDP報酬をプールに配分
+        let badgeRewardPool = newPool;
+        for (const badgeId of newBadges) {
+          const badgeDef = getBadgeById(badgeId);
+          if (badgeDef?.rewardDp) {
+            const perAttr = badgeDef.rewardDp / 4;
+            badgeRewardPool = {
+              ...badgeRewardPool,
+              physical: badgeRewardPool.physical + perAttr,
+              smart: badgeRewardPool.smart + perAttr,
+              mental: badgeRewardPool.mental + perAttr,
+              life: badgeRewardPool.life + perAttr,
+            };
+          }
+        }
+
         return {
           ...prev,
-          dpPool: newPool,
+          dpPool: badgeRewardPool,
           party: newParty,
           caughtPokemon: newCaught,
           totalHatches: newHatches,
@@ -314,8 +341,10 @@ export function usePokemonEngine() {
           unlockedBadges: [...(prev.unlockedBadges ?? []), ...newBadges],
         };
       });
+
+      await checkAndLearnMoves(targetSlotId);
     },
-    [],
+    [checkAndLearnMoves],
   );
 
   const claimChallengeReward = useCallback(() => {
@@ -347,9 +376,13 @@ export function usePokemonEngine() {
     setState((prev) => ({ ...prev, decayRate: rate }));
   }, []);
 
+  const setTrainerName = useCallback((name: string) => {
+    setState((prev) => ({ ...prev, trainerName: name }));
+  }, []);
+
   /** 開発者モード: 任意DPを直接付与 */
   const grantDp = useCallback(
-    (
+    async (
       targetSlotId: number | "pool",
       attribute: AttributeType | "all",
       amount: number,
@@ -424,77 +457,96 @@ export function usePokemonEngine() {
           totalEvolutions: newEvolutions,
         };
       });
+      // DP付与後に技習得チェック（レベルアップで新技を習得する可能性）
+      if (targetSlotId !== "pool") {
+        await checkAndLearnMoves(targetSlotId);
+      }
     },
-    [],
+    [checkAndLearnMoves],
   );
 
   // ===== デコレーション購入（DPプールから消費） =====
-  const purchaseDecoration = useCallback(
-    (slotId: number, itemId: string) => {
-      setState((prev) => {
-        const item = DECORATION_CATALOG.find((d) => d.id === itemId);
-        if (!item) return prev;
-        const slot = prev.party.find((s) => s.slotId === slotId);
-        if (!slot) return prev;
-        // 購入済みはスキップ（再適用はapplyDecorationで）
-        if (slot.decoration.purchasedIds.includes(itemId)) return prev;
+  const purchaseDecoration = useCallback((slotId: number, itemId: string) => {
+    setState((prev) => {
+      const item = DECORATION_CATALOG.find((d) => d.id === itemId);
+      if (!item) return prev;
+      const slot = prev.party.find((s) => s.slotId === slotId);
+      if (!slot) return prev;
+      // 購入済みはスキップ（再適用はapplyDecorationで）
+      if (slot.decoration.purchasedIds.includes(itemId)) return prev;
 
-        const result = spendDpFromPool(prev.dpPool, item.cost);
-        if (!result.ok) return prev;
+      const result = spendDpFromPool(prev.dpPool, item.cost);
+      if (!result.ok) return prev;
 
-        // 購入＋即時装備
-        const newParty = prev.party.map((s) => {
-          if (s.slotId !== slotId) return s;
-          const deco = { ...s.decoration };
-          const purchased = [...deco.purchasedIds, itemId];
-          if (item.category === "background") {
-            return { ...s, decoration: { ...deco, backgroundId: itemId, purchasedIds: purchased } };
-          }
-          if (item.category === "frame") {
-            return { ...s, decoration: { ...deco, frameId: itemId, purchasedIds: purchased } };
-          }
-          // accessory: 最大ACCESSORY_MAX個まで
-          const newAccIds = deco.accessoryIds.length < ACCESSORY_MAX
+      // 購入＋即時装備
+      const newParty = prev.party.map((s) => {
+        if (s.slotId !== slotId) return s;
+        const deco = { ...s.decoration };
+        const purchased = [...deco.purchasedIds, itemId];
+        if (item.category === "background") {
+          return {
+            ...s,
+            decoration: {
+              ...deco,
+              backgroundId: itemId,
+              purchasedIds: purchased,
+            },
+          };
+        }
+        if (item.category === "frame") {
+          return {
+            ...s,
+            decoration: { ...deco, frameId: itemId, purchasedIds: purchased },
+          };
+        }
+        // accessory: 最大ACCESSORY_MAX個まで
+        const newAccIds =
+          deco.accessoryIds.length < ACCESSORY_MAX
             ? [...deco.accessoryIds, itemId]
             : deco.accessoryIds;
-          return { ...s, decoration: { ...deco, accessoryIds: newAccIds, purchasedIds: purchased } };
-        });
-
-        return { ...prev, dpPool: result.newPool, party: newParty };
+        return {
+          ...s,
+          decoration: {
+            ...deco,
+            accessoryIds: newAccIds,
+            purchasedIds: purchased,
+          },
+        };
       });
-    },
-    [],
-  );
+
+      return { ...prev, dpPool: result.newPool, party: newParty };
+    });
+  }, []);
 
   // ===== デコレーション適用（購入済みアイテムを無料で付け替え） =====
-  const applyDecoration = useCallback(
-    (slotId: number, itemId: string) => {
-      setState((prev) => {
-        const slot = prev.party.find((s) => s.slotId === slotId);
-        if (!slot || !slot.decoration.purchasedIds.includes(itemId)) return prev;
-        const item = DECORATION_CATALOG.find((d) => d.id === itemId);
-        if (!item) return prev;
+  const applyDecoration = useCallback((slotId: number, itemId: string) => {
+    setState((prev) => {
+      const slot = prev.party.find((s) => s.slotId === slotId);
+      if (!slot || !slot.decoration.purchasedIds.includes(itemId)) return prev;
+      const item = DECORATION_CATALOG.find((d) => d.id === itemId);
+      if (!item) return prev;
 
-        const newParty = prev.party.map((s) => {
-          if (s.slotId !== slotId) return s;
-          const deco = { ...s.decoration };
-          if (item.category === "background") {
-            return { ...s, decoration: { ...deco, backgroundId: itemId } };
-          }
-          if (item.category === "frame") {
-            return { ...s, decoration: { ...deco, frameId: itemId } };
-          }
-          // accessory: まだ装備していない場合のみ追加
-          if (deco.accessoryIds.includes(itemId)) return s;
-          if (deco.accessoryIds.length >= ACCESSORY_MAX) return s;
-          return { ...s, decoration: { ...deco, accessoryIds: [...deco.accessoryIds, itemId] } };
-        });
-
-        return { ...prev, party: newParty };
+      const newParty = prev.party.map((s) => {
+        if (s.slotId !== slotId) return s;
+        const deco = { ...s.decoration };
+        if (item.category === "background") {
+          return { ...s, decoration: { ...deco, backgroundId: itemId } };
+        }
+        if (item.category === "frame") {
+          return { ...s, decoration: { ...deco, frameId: itemId } };
+        }
+        // accessory: まだ装備していない場合のみ追加
+        if (deco.accessoryIds.includes(itemId)) return s;
+        if (deco.accessoryIds.length >= ACCESSORY_MAX) return s;
+        return {
+          ...s,
+          decoration: { ...deco, accessoryIds: [...deco.accessoryIds, itemId] },
+        };
       });
-    },
-    [],
-  );
+
+      return { ...prev, party: newParty };
+    });
+  }, []);
 
   // ===== デコレーション取り外し =====
   const removeDecoration = useCallback(
@@ -510,7 +562,13 @@ export function usePokemonEngine() {
             return { ...s, decoration: { ...deco, frameId: null } };
           }
           if (category === "accessory") {
-            return { ...s, decoration: { ...deco, accessoryIds: deco.accessoryIds.filter((id) => id !== itemId) } };
+            return {
+              ...s,
+              decoration: {
+                ...deco,
+                accessoryIds: deco.accessoryIds.filter((id) => id !== itemId),
+              },
+            };
           }
           return s;
         });
@@ -527,6 +585,7 @@ export function usePokemonEngine() {
     claimChallengeReward,
     resetGame,
     setDecayRate,
+    setTrainerName,
     grantDp,
     checkAndLearnMoves,
     forgetMove,

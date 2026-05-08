@@ -15,6 +15,7 @@ export default function App() {
     claimChallengeReward,
     resetGame,
     setDecayRate,
+    setTrainerName,
     grantDp,
     forgetMove,
     cancelPendingMove,
@@ -66,6 +67,7 @@ export default function App() {
             state={state}
             onReset={resetGame}
             onDecayRateChange={setDecayRate}
+            onNameChange={setTrainerName}
             onClaimReward={claimChallengeReward}
             onGrantDp={grantDp}
           />

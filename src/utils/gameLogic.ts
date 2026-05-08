@@ -68,6 +68,7 @@ export function makeEmptySlot(slotId: number, isEgg: boolean): PokemonSlot {
     totalDpEver: 0,
     lastUpdatedAt: Date.now(),
     learnedMoves: [],
+    lastMoveLearnLevel: 0,
     decoration: makeEmptyDecoration(),
   };
 }
@@ -94,6 +95,7 @@ export function spendDpFromPool(
 
 export function makeInitialState(): GameState {
   return {
+    trainerName: "トレーナー",
     party: [
       makeEmptySlot(0, true),
       makeEmptySlot(1, false),
@@ -132,9 +134,15 @@ export function migrateState(raw: unknown): GameState {
     merged.party = merged.party.map((slot) => ({
       ...slot,
       // 英語名（ASCII のみ）で保存されていた技はリセット → 起動時に日本語で再習得
-      learnedMoves: (slot.learnedMoves ?? []).every((m: string) => /^[\x00-\x7F\s]+$/.test(m))
+      learnedMoves: (slot.learnedMoves ?? []).some((m: string) =>
+        /^[A-Za-z]/.test(m),
+      )
         ? []
         : slot.learnedMoves,
+      lastMoveLearnLevel:
+        typeof slot.lastMoveLearnLevel === "number"
+          ? slot.lastMoveLearnLevel
+          : 0,
       decoration: slot.decoration ?? makeEmptyDecoration(),
     }));
   }
@@ -173,9 +181,15 @@ export function meetsConditions(
   timeOfDay: TimeOfDay,
 ): boolean {
   const { dp, totalDpEver } = slot;
-  if (conditions.minLevel !== undefined && calcLevel(totalDpEver) < conditions.minLevel)
+  if (
+    conditions.minLevel !== undefined &&
+    calcLevel(totalDpEver) < conditions.minLevel
+  )
     return false;
-  if (conditions.minPhysical !== undefined && dp.physical < conditions.minPhysical)
+  if (
+    conditions.minPhysical !== undefined &&
+    dp.physical < conditions.minPhysical
+  )
     return false;
   if (conditions.minSmart !== undefined && dp.smart < conditions.minSmart)
     return false;
@@ -183,7 +197,10 @@ export function meetsConditions(
     return false;
   if (conditions.minLife !== undefined && dp.life < conditions.minLife)
     return false;
-  if (conditions.minAffection !== undefined && totalDpEver < conditions.minAffection)
+  if (
+    conditions.minAffection !== undefined &&
+    totalDpEver < conditions.minAffection
+  )
     return false;
   if (conditions.timeOfDay !== undefined && conditions.timeOfDay !== timeOfDay)
     return false;
@@ -201,12 +218,16 @@ export function meetsConditions(
   return true;
 }
 
-export function checkEvolution(slot: PokemonSlot, inputTime: number): PokemonSlot {
+export function checkEvolution(
+  slot: PokemonSlot,
+  inputTime: number,
+): PokemonSlot {
   if (slot.pokemonId === null) return slot;
 
   if (slot.isEgg) {
     if (slot.totalDpEver >= HATCH_THRESHOLD) {
-      const randomId = HATCH_POOL[Math.floor(Math.random() * HATCH_POOL.length)];
+      const randomId =
+        HATCH_POOL[Math.floor(Math.random() * HATCH_POOL.length)];
       return { ...slot, pokemonId: randomId, isEgg: false };
     }
     return slot;

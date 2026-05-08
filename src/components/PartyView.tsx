@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type {
   GameState,
   PokemonSlot,
@@ -15,7 +15,9 @@ import { getEvolutionEntry } from "../data/evolutionTable";
 import { DpPoolPanel } from "./DpPoolPanel";
 import { PokemonChat } from "./PokemonChat";
 import { PokemonDex } from "./PokemonDex";
+import { MoveSelectionModal } from "./MoveSelectionModal";
 import { animatedSpriteUrl, onSpriteError } from "../utils/spriteUrl";
+import { playPokemonCry } from "../utils/pokemonCry";
 import { calcLevel } from "../utils/levelSystem";
 import { getMovesByPokemonId } from "../services/pokeApiService";
 import type { Move } from "../services/pokeApiService";
@@ -35,7 +37,9 @@ function NextMoveInfo({
   currentLevel: number;
   learnedMoves: string[];
 }) {
-  const [next, setNext] = useState<{ name: string; atLevel: number } | null | "loading">("loading");
+  const [next, setNext] = useState<
+    { name: string; atLevel: number } | null | "loading"
+  >("loading");
 
   useEffect(() => {
     let cancelled = false;
@@ -51,16 +55,25 @@ function NextMoveInfo({
         .sort((a, b) => a.level - b.level)[0];
 
       if (nextMove) {
-        setNext({ name: nextMove.name, atLevel: Math.ceil(nextMove.level / 10) });
+        setNext({
+          name: nextMove.name,
+          atLevel: Math.ceil(nextMove.level / 10),
+        });
       } else {
         setNext(null);
       }
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [pokemonId, currentLevel, learnedMoves]);
 
-  if (next === "loading") return <div className="pokemon-card__next-move-loading">…</div>;
-  if (next === null) return <div className="pokemon-card__next-move-none">習得できる技はもうない</div>;
+  if (next === "loading")
+    return <div className="pokemon-card__next-move-loading">…</div>;
+  if (next === null)
+    return (
+      <div className="pokemon-card__next-move-none">習得できる技はもうない</div>
+    );
 
   return (
     <div className="pokemon-card__next-move-info">
@@ -90,7 +103,11 @@ interface Props {
   onCancelPendingMove?: () => void;
   onPurchaseDecoration?: (slotId: number, itemId: string) => void;
   onApplyDecoration?: (slotId: number, itemId: string) => void;
-  onRemoveDecoration?: (slotId: number, itemId: string, category: DecorationCategory) => void;
+  onRemoveDecoration?: (
+    slotId: number,
+    itemId: string,
+    category: DecorationCategory,
+  ) => void;
 }
 
 const ATTRS: AttributeType[] = ["physical", "smart", "mental", "life"];
@@ -107,8 +124,6 @@ function PokemonCard({
   onAllocate,
   onAddActivity,
   onClaimReward,
-  onForgetMove,
-  onCancelPendingMove,
   onPurchaseDecoration,
   onApplyDecoration,
   onRemoveDecoration,
@@ -125,14 +140,27 @@ function PokemonCard({
     isConversation?: boolean,
   ) => void;
   onClaimReward: () => void;
-  onForgetMove?: (moveToForgot: string) => void;
-  onCancelPendingMove?: () => void;
   onPurchaseDecoration?: (slotId: number, itemId: string) => void;
   onApplyDecoration?: (slotId: number, itemId: string) => void;
-  onRemoveDecoration?: (slotId: number, itemId: string, category: DecorationCategory) => void;
+  onRemoveDecoration?: (
+    slotId: number,
+    itemId: string,
+    category: DecorationCategory,
+  ) => void;
 }) {
   const [mode, setMode] = useState<CardMode>("normal");
   const [showAllocate, setShowAllocate] = useState(false);
+
+  // 孵化・進化を検出して鳴き声を再生
+  const prevPokemonIdRef = useRef<number | null | undefined>(slot.pokemonId);
+  useEffect(() => {
+    const prev = prevPokemonIdRef.current;
+    const curr = slot.pokemonId;
+    if (curr && curr !== 0 && curr !== prev) {
+      playPokemonCry(curr);
+    }
+    prevPokemonIdRef.current = curr;
+  }, [slot.pokemonId]);
 
   const isEgg = slot.isEgg || slot.pokemonId === 0;
   const name = isEgg ? "タマゴ" : getPokemonName(slot.pokemonId ?? 0);
@@ -146,7 +174,8 @@ function PokemonCard({
   // デコレーション CSS クラス計算
   const deco = slot.decoration;
   const bgClass = deco.backgroundId
-    ? (DECORATION_CATALOG.find((d) => d.id === deco.backgroundId)?.cssClass ?? "")
+    ? (DECORATION_CATALOG.find((d) => d.id === deco.backgroundId)?.cssClass ??
+      "")
     : "";
   const frameClass = deco.frameId
     ? (DECORATION_CATALOG.find((d) => d.id === deco.frameId)?.cssClass ?? "")
@@ -165,11 +194,22 @@ function PokemonCard({
       {/* ヒーローエリア: スプライト + 名前 + No.（背景・フレームデコはここだけに適用） */}
       <div className={`pokemon-card__hero ${bgClass} ${frameClass}`.trim()}>
         {/* アクセサリーオーバーレイ */}
-        {accessories.map((acc) => acc && (
-          <span key={acc.id} className={`pokemon-card__acc ${acc.cssClass}`} aria-hidden="true">
-            {acc.emoji}
-          </span>
-        ))}
+        {accessories.map(
+          (acc) =>
+            acc && (
+              <span
+                key={acc.id}
+                className={`pokemon-card__acc ${acc.cssClass}`}
+                aria-hidden="true"
+              >
+                {acc.spriteUrl ? (
+                  <img src={acc.spriteUrl} alt={acc.name} className="pokemon-card__acc-sprite" />
+                ) : (
+                  acc.emoji
+                )}
+              </span>
+            ),
+        )}
 
         {/* 画像エリア */}
         <div className="pokemon-card__sprite-area">
@@ -189,7 +229,9 @@ function PokemonCard({
         <div className="pokemon-card__name-row">
           <div className="pokemon-card__name">{name}</div>
           {!isEgg && (
-            <div className="pokemon-card__level">Lv.{calcLevel(slot.totalDpEver)}</div>
+            <div className="pokemon-card__level">
+              Lv.{calcLevel(slot.totalDpEver)}
+            </div>
           )}
         </div>
         {!isEgg && slot.pokemonId !== null && (
@@ -213,12 +255,14 @@ function PokemonCard({
             📖 {mode === "dex" ? "閉じる" : "図鑑"}
           </button>
         )}
-        <button
-          className={`pokemon-card__action-btn pokemon-card__action-btn--deco${mode === "deco" ? " active" : ""}`}
-          onClick={() => toggleMode("deco")}
-        >
-          🎨 {mode === "deco" ? "閉じる" : "デコる"}
-        </button>
+        {!isEgg && (
+          <button
+            className={`pokemon-card__action-btn pokemon-card__action-btn--deco${mode === "deco" ? " active" : ""}`}
+            onClick={() => toggleMode("deco")}
+          >
+            🎨 {mode === "deco" ? "閉じる" : "デコる"}
+          </button>
+        )}
       </div>
 
       {/* ===== チャットモード ===== */}
@@ -228,8 +272,6 @@ function PokemonCard({
           state={state}
           onAddActivity={onAddActivity}
           onClaimReward={onClaimReward}
-          onForgetMove={onForgetMove}
-          onCancelPendingMove={onCancelPendingMove}
         />
       )}
 
@@ -245,7 +287,9 @@ function PokemonCard({
           dpPool={state.dpPool}
           onPurchase={(itemId) => onPurchaseDecoration?.(slot.slotId, itemId)}
           onApply={(itemId) => onApplyDecoration?.(slot.slotId, itemId)}
-          onRemove={(itemId, category) => onRemoveDecoration?.(slot.slotId, itemId, category)}
+          onRemove={(itemId, category) =>
+            onRemoveDecoration?.(slot.slotId, itemId, category)
+          }
         />
       )}
 
@@ -318,7 +362,9 @@ function PokemonCard({
                 ) : (
                   <div className="pokemon-card__moves-list">
                     {(slot.learnedMoves ?? []).map((move) => (
-                      <span key={move} className="pokemon-card__move-chip">{move}</span>
+                      <span key={move} className="pokemon-card__move-chip">
+                        {move}
+                      </span>
                     ))}
                   </div>
                 )}
@@ -373,16 +419,32 @@ function PokemonCard({
                     label: `なつき度 ${cond.minAffection}`,
                     met: slot.totalDpEver >= (cond.minAffection ?? 0),
                   });
-                if (cond.timeOfDay)
+                if (cond.timeOfDay) {
+                  const hour = new Date().getHours();
+                  const currentTod = hour >= 6 && hour < 18 ? "day" : "night";
                   checks.push({
                     label: cond.timeOfDay === "day" ? "昼に活動" : "夜に活動",
-                    met: false,
+                    met: currentTod === cond.timeOfDay,
                   });
-                if (cond.bias)
+                }
+                if (cond.bias) {
+                  const domVal = slot.dp[cond.bias.dominant];
+                  const biasMet =
+                    cond.bias.withinRange !== undefined
+                      ? cond.bias.over.every(
+                          (a) =>
+                            Math.abs(
+                              domVal - slot.dp[a as keyof typeof slot.dp],
+                            ) <= cond.bias!.withinRange!,
+                        )
+                      : cond.bias.over.every(
+                          (a) => domVal > slot.dp[a as keyof typeof slot.dp],
+                        );
                   checks.push({
                     label: `${ATTR_LABEL[cond.bias.dominant]}が高い`,
-                    met: false,
+                    met: biasMet,
                   });
+                }
                 return (
                   <div
                     key={target.targetId}
@@ -460,29 +522,29 @@ export function PartyView({
   return (
     <div className="party-view">
       <div className="party-nav">
-          {unlockedParty.map((s, i) => {
-            const isEgg = s.isEgg || s.pokemonId === 0;
-            const isSelected = i === safeIndex;
-            return (
-              <button
-                key={s.slotId}
-                className={`party-nav__icon${isSelected ? " party-nav__icon--active" : ""}`}
-                onClick={() => setIndex(i)}
-                aria-label={isEgg ? "タマゴ" : getPokemonName(s.pokemonId ?? 0)}
-              >
-                {isEgg ? (
-                  <span className="party-nav__icon-egg">🥚</span>
-                ) : (
-                  <img
-                    src={animatedSpriteUrl(s.pokemonId!)}
-                    alt={getPokemonName(s.pokemonId ?? 0)}
-                    className="party-nav__icon-sprite"
-                    onError={(e) => onSpriteError(e, s.pokemonId!)}
-                  />
-                )}
-              </button>
-            );
-          })}
+        {unlockedParty.map((s, i) => {
+          const isEgg = s.isEgg || s.pokemonId === 0;
+          const isSelected = i === safeIndex;
+          return (
+            <button
+              key={s.slotId}
+              className={`party-nav__icon${isSelected ? " party-nav__icon--active" : ""}`}
+              onClick={() => setIndex(i)}
+              aria-label={isEgg ? "タマゴ" : getPokemonName(s.pokemonId ?? 0)}
+            >
+              {isEgg ? (
+                <span className="party-nav__icon-egg">🥚</span>
+              ) : (
+                <img
+                  src={animatedSpriteUrl(s.pokemonId!)}
+                  alt={getPokemonName(s.pokemonId ?? 0)}
+                  className="party-nav__icon-sprite"
+                  onError={(e) => onSpriteError(e, s.pokemonId!)}
+                />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {current && (
@@ -492,8 +554,6 @@ export function PartyView({
           onAllocate={onAllocate}
           onAddActivity={onAddActivity}
           onClaimReward={onClaimReward}
-          onForgetMove={onForgetMove}
-          onCancelPendingMove={onCancelPendingMove}
           onPurchaseDecoration={onPurchaseDecoration}
           onApplyDecoration={onApplyDecoration}
           onRemoveDecoration={onRemoveDecoration}
@@ -510,6 +570,18 @@ export function PartyView({
       )}
       {unlockedSlots >= 6 && (
         <div className="party-view__unlock-hint">パーティが満員です</div>
+      )}
+
+      {state.pendingMove && state.pendingMoveSlotId !== null && (
+        <MoveSelectionModal
+          newMove={state.pendingMove}
+          currentMoves={
+            state.party.find((s) => s.slotId === state.pendingMoveSlotId)
+              ?.learnedMoves ?? []
+          }
+          onConfirm={(moveToForgot) => onForgetMove?.(moveToForgot)}
+          onCancel={() => onCancelPendingMove?.()}
+        />
       )}
     </div>
   );

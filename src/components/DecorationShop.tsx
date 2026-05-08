@@ -78,7 +78,13 @@ export function DecorationShop({ slot, dpPool, onPurchase, onApply, onRemove }: 
               key={item.id}
               className={`deco-shop__item${equipped ? " equipped" : ""}${purchased ? " purchased" : ""}`}
             >
-              <div className="deco-shop__item-emoji">{item.emoji}</div>
+              <div className="deco-shop__item-emoji">
+                {item.spriteUrl ? (
+                  <img src={item.spriteUrl} alt={item.name} className="deco-shop__item-sprite" />
+                ) : (
+                  item.emoji
+                )}
+              </div>
               <div className="deco-shop__item-name">{item.name}</div>
 
               {purchased ? (
@@ -128,23 +134,32 @@ export function DecorationShop({ slot, dpPool, onPurchase, onApply, onRemove }: 
         <div className="deco-shop__current">
           <div className="deco-shop__current-title">現在の装備</div>
           <div className="deco-shop__current-list">
-            {deco.backgroundId && (
-              <span className="deco-shop__current-item">
-                {DECORATION_CATALOG.find((d) => d.id === deco.backgroundId)?.emoji}{" "}
-                {DECORATION_CATALOG.find((d) => d.id === deco.backgroundId)?.name}
-              </span>
-            )}
-            {deco.frameId && (
-              <span className="deco-shop__current-item">
-                {DECORATION_CATALOG.find((d) => d.id === deco.frameId)?.emoji}{" "}
-                {DECORATION_CATALOG.find((d) => d.id === deco.frameId)?.name}
-              </span>
-            )}
+            {deco.backgroundId && (() => {
+              const bg = DECORATION_CATALOG.find((d) => d.id === deco.backgroundId);
+              return bg ? (
+                <span className="deco-shop__current-item">
+                  {bg.emoji} {bg.name}
+                </span>
+              ) : null;
+            })()}
+            {deco.frameId && (() => {
+              const fr = DECORATION_CATALOG.find((d) => d.id === deco.frameId);
+              return fr ? (
+                <span className="deco-shop__current-item">
+                  {fr.emoji} {fr.name}
+                </span>
+              ) : null;
+            })()}
             {deco.accessoryIds.map((accId) => {
               const acc = DECORATION_CATALOG.find((d) => d.id === accId);
               return acc ? (
                 <span key={accId} className="deco-shop__current-item">
-                  {acc.emoji} {acc.name}
+                  {acc.spriteUrl ? (
+                    <img src={acc.spriteUrl} alt={acc.name} className="deco-shop__current-sprite" />
+                  ) : (
+                    acc.emoji
+                  )}{" "}
+                  {acc.name}
                 </span>
               ) : null;
             })}

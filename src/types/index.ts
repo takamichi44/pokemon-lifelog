@@ -7,7 +7,8 @@ export interface DecorationItem {
   id: string;
   category: DecorationCategory;
   name: string;
-  emoji: string;
+  emoji?: string;      // 絵文字アクセサリー
+  spriteUrl?: string;  // PokeAPI スプライト画像URL
   cost: number;
   cssClass: string; // カードに付与するCSSクラス
 }
@@ -40,6 +41,7 @@ export interface PokemonSlot {
   totalDpEver: number; // なつき度代替（減衰の影響を受けない累計）
   lastUpdatedAt: number;
   learnedMoves: string[]; // 習得済み技（最大4つ）
+  lastMoveLearnLevel: number; // そのポケモンの技習得チェック済みレベル
   decoration: SlotDecoration; // カードデコレーション
 }
 
@@ -79,6 +81,7 @@ export interface WeeklyChallenge {
 }
 
 export interface GameState {
+  trainerName: string;
   party: PokemonSlot[];
   dpPool: Record<AttributeType, number>;
   totalTp: number;

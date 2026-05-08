@@ -807,6 +807,20 @@ body,
   font-size: 12px;
   min-height: 40px;
 }
+.trainer-setting-input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+  min-height: 40px;
+  width: 140px;
+}
+.trainer-setting-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
 
 .trainer-setting-hint {
   font-size: 11px;
@@ -1176,6 +1190,54 @@ body,
   background: var(--bg-card2);
   border-radius: 8px;
   padding: 10px 12px;
+}
+.pokemon-dex__genus {
+  font-size: 12px;
+  color: var(--text-sub);
+  font-weight: normal;
+  margin-left: 4px;
+}
+.pokemon-dex__abilities {
+  margin-top: 4px;
+}
+.pokemon-dex__abilities-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.pokemon-dex__ability {
+  background: var(--bg-card2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+}
+.pokemon-dex__ability--hidden {
+  border-left: 3px solid #a855f7;
+}
+.pokemon-dex__ability-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pokemon-dex__ability-hidden-badge {
+  font-size: 10px;
+  background: #a855f7;
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-weight: normal;
+}
+.pokemon-dex__ability-flavor {
+  font-size: 12px;
+  color: var(--text-sub);
+  line-height: 1.6;
+  margin: 4px 0 0;
 }
 
 /* ===== Pokedex View（専用タブ画面） ===== */
@@ -2722,6 +2784,32 @@ body,
 .pokemon-card__acc--acc-sparkle {
   top: 8px; right: 30px;
   animation: sparkle-anim 1.5s ease-in-out infinite;
+}
+/* PokeAPI スプライトアイテム用の位置クラス */
+.pokemon-card__acc--scarf   { bottom: 4px; left: 50%; transform: translateX(-50%); }
+.pokemon-card__acc--gem     { top: 6px; left: 10px; }
+.pokemon-card__acc--collect { bottom: 6px; right: 10px; }
+/* カード上のスプライト画像サイズ */
+.pokemon-card__acc-sprite {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+/* ショップグリッド内のスプライト画像 */
+.deco-shop__item-sprite {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+/* 現在の装備プレビュー内のスプライト画像 */
+.deco-shop__current-sprite {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  vertical-align: middle;
 }
 
 /* ===================================================
