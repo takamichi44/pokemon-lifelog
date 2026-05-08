@@ -22,8 +22,14 @@ export default function App() {
     purchaseDecoration,
     applyDecoration,
     removeDecoration,
-  } = usePokemonEngine();
+  } = usePokemonEngine((fromPokemonId, toPokemonId) => {
+    setEvolutionAnimation({ fromPokemonId, toPokemonId });
+  });
   const [tab, setTab] = useState<TabId>("party");
+  const [evolutionAnimation, setEvolutionAnimation] = useState<{
+    fromPokemonId: number;
+    toPokemonId: number;
+  } | null>(null);
 
   const hasPoolDp = Object.values(state.dpPool).some((v) => v > 0);
 
@@ -35,7 +41,14 @@ export default function App() {
     pokemonResponse?: string,
     isConversation?: boolean,
   ) {
-    addActivity(text, attribute, category, targetSlotId, pokemonResponse, isConversation);
+    addActivity(
+      text,
+      attribute,
+      category,
+      targetSlotId,
+      pokemonResponse,
+      isConversation,
+    );
   }
 
   return (
@@ -57,6 +70,8 @@ export default function App() {
             onPurchaseDecoration={purchaseDecoration}
             onApplyDecoration={applyDecoration}
             onRemoveDecoration={removeDecoration}
+            evolutionAnimation={evolutionAnimation}
+            onCloseEvolutionAnimation={() => setEvolutionAnimation(null)}
           />
         )}
         {tab === "pokedex" && (

@@ -347,7 +347,7 @@ body,
   align-items: center;
   gap: 6px;
   margin: -4px -4px 0; /* カード padding からはみ出して端まで色を塗る */
-  overflow: hidden;    /* 背景グラデがはみ出さないよう */
+  overflow: hidden; /* 背景グラデがはみ出さないよう */
 }
 
 /* レインボーフレームの ::before はヒーロー外縁に沿う */
@@ -2587,8 +2587,13 @@ body,
 }
 /* ── 派手な新背景 ── */
 .pokemon-card--bg-aurora {
-  background:
-    linear-gradient(180deg, #001520 0%, #003530 30%, #002040 60%, #100030 100%);
+  background: linear-gradient(
+    180deg,
+    #001520 0%,
+    #003530 30%,
+    #002040 60%,
+    #100030 100%
+  );
   color: #c0ffee;
   overflow: hidden;
 }
@@ -2597,21 +2602,48 @@ body,
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(105deg, transparent 20%, rgba(0,255,160,0.35) 40%, transparent 55%),
-    linear-gradient(80deg,  transparent 30%, rgba(120,0,255,0.25) 55%, transparent 70%),
-    linear-gradient(130deg, transparent 10%, rgba(0,200,255,0.20) 35%, transparent 50%);
+    linear-gradient(
+      105deg,
+      transparent 20%,
+      rgba(0, 255, 160, 0.35) 40%,
+      transparent 55%
+    ),
+    linear-gradient(
+      80deg,
+      transparent 30%,
+      rgba(120, 0, 255, 0.25) 55%,
+      transparent 70%
+    ),
+    linear-gradient(
+      130deg,
+      transparent 10%,
+      rgba(0, 200, 255, 0.2) 35%,
+      transparent 50%
+    );
   background-size: 200% 200%;
   animation: aurora-wave 6s ease-in-out infinite;
   pointer-events: none;
   mix-blend-mode: screen;
 }
 .pokemon-card--bg-volcano {
-  background: radial-gradient(ellipse at 50% 110%, #ff4500 0%, #8b1a00 40%, #1a0500 80%, #0a0000 100%);
+  background: radial-gradient(
+    ellipse at 50% 110%,
+    #ff4500 0%,
+    #8b1a00 40%,
+    #1a0500 80%,
+    #0a0000 100%
+  );
   color: #ffe8c0;
   animation: volcano-pulse 2s ease-in-out infinite alternate;
 }
 .pokemon-card--bg-thunder {
-  background: linear-gradient(160deg, #0a0a1e 0%, #0c1a3e 40%, #1a1a00 70%, #0a0a1e 100%);
+  background: linear-gradient(
+    160deg,
+    #0a0a1e 0%,
+    #0c1a3e 40%,
+    #1a1a00 70%,
+    #0a0a1e 100%
+  );
   color: #fff8c0;
   animation: thunder-flash 4s ease-in-out infinite;
 }
@@ -2620,14 +2652,31 @@ body,
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(105deg, transparent 45%, rgba(255,240,0,0.6) 50%, transparent 55%),
-    linear-gradient(80deg,  transparent 60%, rgba(200,220,255,0.4) 63%, transparent 66%);
+    linear-gradient(
+      105deg,
+      transparent 45%,
+      rgba(255, 240, 0, 0.6) 50%,
+      transparent 55%
+    ),
+    linear-gradient(
+      80deg,
+      transparent 60%,
+      rgba(200, 220, 255, 0.4) 63%,
+      transparent 66%
+    );
   opacity: 0;
   animation: lightning-bolt 4s ease-in-out infinite;
   pointer-events: none;
 }
 .pokemon-card--bg-crystal {
-  background: linear-gradient(135deg, #d0f0ff 0%, #e8f8ff 30%, #b8e0ff 55%, #f0e8ff 80%, #ddf0ff 100%);
+  background: linear-gradient(
+    135deg,
+    #d0f0ff 0%,
+    #e8f8ff 30%,
+    #b8e0ff 55%,
+    #f0e8ff 80%,
+    #ddf0ff 100%
+  );
   color: #003060;
   animation: crystal-shimmer 3s ease-in-out infinite;
 }
@@ -2635,25 +2684,78 @@ body,
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.7) 50%, transparent 70%);
+  background: linear-gradient(
+    120deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.7) 50%,
+    transparent 70%
+  );
   background-size: 200% 100%;
   animation: crystal-glare 2.5s ease-in-out infinite;
   pointer-events: none;
 }
 .pokemon-card--bg-cosmos {
   background-image:
-    radial-gradient(circle 1.5px at 12% 18%, rgba(255,255,255,0.9) 0%, transparent 100%),
-    radial-gradient(circle 1px   at 75% 8%,  rgba(255,255,255,0.7) 0%, transparent 100%),
-    radial-gradient(circle 2px   at 40% 55%, rgba(200,200,255,0.8) 0%, transparent 100%),
-    radial-gradient(circle 1px   at 90% 40%, rgba(255,255,255,0.9) 0%, transparent 100%),
-    radial-gradient(circle 1.5px at 22% 80%, rgba(255,255,255,0.6) 0%, transparent 100%),
-    radial-gradient(circle 1px   at 58% 25%, rgba(255,255,255,0.8) 0%, transparent 100%),
-    radial-gradient(circle 1px   at 85% 70%, rgba(200,220,255,0.7) 0%, transparent 100%),
-    radial-gradient(circle 2px   at 5%  50%, rgba(255,255,255,0.5) 0%, transparent 100%),
-    radial-gradient(circle 1px   at 65% 88%, rgba(255,255,255,0.8) 0%, transparent 100%),
-    radial-gradient(circle 1px   at 33% 35%, rgba(255,200,255,0.6) 0%, transparent 100%),
-    radial-gradient(circle 1.5px at 50% 70%, rgba(255,255,255,0.9) 0%, transparent 100%),
-    radial-gradient(circle 1px   at 18% 45%, rgba(200,255,255,0.7) 0%, transparent 100%),
+    radial-gradient(
+      circle 1.5px at 12% 18%,
+      rgba(255, 255, 255, 0.9) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 1px at 75% 8%,
+      rgba(255, 255, 255, 0.7) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 2px at 40% 55%,
+      rgba(200, 200, 255, 0.8) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 1px at 90% 40%,
+      rgba(255, 255, 255, 0.9) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 1.5px at 22% 80%,
+      rgba(255, 255, 255, 0.6) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 1px at 58% 25%,
+      rgba(255, 255, 255, 0.8) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 1px at 85% 70%,
+      rgba(200, 220, 255, 0.7) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 2px at 5% 50%,
+      rgba(255, 255, 255, 0.5) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 1px at 65% 88%,
+      rgba(255, 255, 255, 0.8) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 1px at 33% 35%,
+      rgba(255, 200, 255, 0.6) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 1.5px at 50% 70%,
+      rgba(255, 255, 255, 0.9) 0%,
+      transparent 100%
+    ),
+    radial-gradient(
+      circle 1px at 18% 45%,
+      rgba(200, 255, 255, 0.7) 0%,
+      transparent 100%
+    ),
     linear-gradient(to bottom, #000015, #060025, #0a0030);
   color: #dde8ff;
   animation: cosmos-twinkle 5s ease-in-out infinite;
@@ -2681,7 +2783,14 @@ body,
   position: absolute;
   inset: -3px;
   border-radius: calc(var(--radius) + 3px);
-  background: linear-gradient(270deg, #ff6b6b, #ffd93d, #6bcb77, #4d96ff, #ff6b6b);
+  background: linear-gradient(
+    270deg,
+    #ff6b6b,
+    #ffd93d,
+    #6bcb77,
+    #4d96ff,
+    #ff6b6b
+  );
   background-size: 300% 300%;
   animation: rainbow-border 3s linear infinite;
   z-index: -1;
@@ -2695,28 +2804,28 @@ body,
 .pokemon-card--frame-neon {
   border: 2px solid #00ffee;
   box-shadow:
-    0 0 4px  #00ffee,
+    0 0 4px #00ffee,
     0 0 12px #00ffee,
     0 0 28px #00ffee,
-    0 0 6px  #ff00cc inset;
+    0 0 6px #ff00cc inset;
   animation: neon-flicker 3s ease-in-out infinite;
 }
 .pokemon-card--frame-fire {
   border: 3px solid #ff7700;
   box-shadow:
-    0 0 6px  #ff7700,
+    0 0 6px #ff7700,
     0 0 18px #ff3300,
     0 0 40px #ff0000,
-    0 0 8px  rgba(255,120,0,0.3) inset;
+    0 0 8px rgba(255, 120, 0, 0.3) inset;
   animation: fire-frame 1.4s ease-in-out infinite alternate;
 }
 .pokemon-card--frame-electric {
   border: 2px solid #ffe000;
   box-shadow:
-    0 0 4px  #ffe000,
+    0 0 4px #ffe000,
     0 0 14px #44aaff,
     0 0 32px #ffe000,
-    0 0 5px  rgba(255,230,0,0.4) inset;
+    0 0 5px rgba(255, 230, 0, 0.4) inset;
   animation: electric-zap 0.7s ease-in-out infinite;
 }
 .pokemon-card--frame-holographic {
@@ -2730,8 +2839,14 @@ body,
   border-radius: calc(var(--radius) - 2px);
   background: linear-gradient(
     45deg,
-    #ff0080, #ff8800, #ffff00, #00ff88,
-    #00ffff, #0080ff, #8000ff, #ff0080
+    #ff0080,
+    #ff8800,
+    #ffff00,
+    #00ff88,
+    #00ffff,
+    #0080ff,
+    #8000ff,
+    #ff0080
   );
   background-size: 400% 400%;
   animation: holo-spin 2.5s linear infinite;
@@ -2741,10 +2856,10 @@ body,
 .pokemon-card--frame-legendary {
   border: 3px solid #ffd700;
   box-shadow:
-    0 0 8px  #ffd700,
+    0 0 8px #ffd700,
     0 0 22px #ffaa00,
     0 0 50px #ff8800,
-    0 0 10px rgba(255,215,0,0.4) inset;
+    0 0 10px rgba(255, 215, 0, 0.4) inset;
   animation: legendary-aura 2s ease-in-out infinite;
 }
 .pokemon-card--frame-legendary::before {
@@ -2755,7 +2870,9 @@ body,
   transform: translateX(-50%);
   font-size: 0.75rem;
   color: #ffd700;
-  text-shadow: 0 0 8px #ffd700, 0 0 16px #ffaa00;
+  text-shadow:
+    0 0 8px #ffd700,
+    0 0 16px #ffaa00;
   animation: legendary-stars 1.5s ease-in-out infinite alternate;
   pointer-events: none;
   white-space: nowrap;
@@ -2772,23 +2889,47 @@ body,
   z-index: 10;
   line-height: 1;
 }
-.pokemon-card__acc--acc-crown  { top: -12px; right: 10px; }
-.pokemon-card__acc--acc-star   { top: 6px;   left: 10px; }
-.pokemon-card__acc--acc-ribbon { bottom: 6px; left: 10px; }
-.pokemon-card__acc--acc-heart  { bottom: 6px; right: 10px; }
-.pokemon-card__acc--acc-music  {
-  top: 50%; left: 6px;
+.pokemon-card__acc--acc-crown {
+  top: -12px;
+  right: 10px;
+}
+.pokemon-card__acc--acc-star {
+  top: 6px;
+  left: 10px;
+}
+.pokemon-card__acc--acc-ribbon {
+  bottom: 6px;
+  left: 10px;
+}
+.pokemon-card__acc--acc-heart {
+  bottom: 6px;
+  right: 10px;
+}
+.pokemon-card__acc--acc-music {
+  top: 50%;
+  left: 6px;
   transform: translateY(-50%);
   animation: float-music 2s ease-in-out infinite;
 }
 .pokemon-card__acc--acc-sparkle {
-  top: 8px; right: 30px;
+  top: 8px;
+  right: 30px;
   animation: sparkle-anim 1.5s ease-in-out infinite;
 }
 /* PokeAPI スプライトアイテム用の位置クラス */
-.pokemon-card__acc--scarf   { bottom: 4px; left: 50%; transform: translateX(-50%); }
-.pokemon-card__acc--gem     { top: 6px; left: 10px; }
-.pokemon-card__acc--collect { bottom: 6px; right: 10px; }
+.pokemon-card__acc--scarf {
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.pokemon-card__acc--gem {
+  top: 6px;
+  left: 10px;
+}
+.pokemon-card__acc--collect {
+  bottom: 6px;
+  right: 10px;
+}
 /* カード上のスプライト画像サイズ */
 .pokemon-card__acc-sprite {
   width: 28px;
@@ -2816,96 +2957,254 @@ body,
    デコレーション — キーフレーム
 =================================================== */
 @keyframes rainbow-bg {
-  0%,100% { background-position: 0% 50%; }
-  50%      { background-position: 100% 50%; }
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
 }
 @keyframes gold-pulse {
-  0%,100% { box-shadow: 0 0 14px rgba(255, 215, 0, 0.7); }
-  50%      { box-shadow: 0 0 26px rgba(255, 215, 0, 1); }
+  0%,
+  100% {
+    box-shadow: 0 0 14px rgba(255, 215, 0, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 26px rgba(255, 215, 0, 1);
+  }
 }
 @keyframes rainbow-border {
-  0%   { background-position: 0% 50%; }
-  100% { background-position: 300% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 300% 50%;
+  }
 }
 @keyframes float-music {
-  0%,100% { transform: translateY(-50%) rotate(-8deg); }
-  50%      { transform: translateY(calc(-50% - 6px)) rotate(8deg); }
+  0%,
+  100% {
+    transform: translateY(-50%) rotate(-8deg);
+  }
+  50% {
+    transform: translateY(calc(-50% - 6px)) rotate(8deg);
+  }
 }
 @keyframes sparkle-anim {
-  0%,100% { opacity: 1;   transform: scale(1); }
-  50%      { opacity: 0.4; transform: scale(0.7); }
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
 }
 
 /* ── 派手な新背景用 ── */
 @keyframes aurora-wave {
-  0%,100% { background-position: 0% 0%, 100% 100%, 50% 50%; opacity: 0.8; }
-  33%     { background-position: 100% 50%, 0% 0%, 80% 20%; opacity: 1; }
-  66%     { background-position: 50% 100%, 60% 40%, 0% 80%; opacity: 0.7; }
+  0%,
+  100% {
+    background-position:
+      0% 0%,
+      100% 100%,
+      50% 50%;
+    opacity: 0.8;
+  }
+  33% {
+    background-position:
+      100% 50%,
+      0% 0%,
+      80% 20%;
+    opacity: 1;
+  }
+  66% {
+    background-position:
+      50% 100%,
+      60% 40%,
+      0% 80%;
+    opacity: 0.7;
+  }
 }
 @keyframes volcano-pulse {
-  from { box-shadow: inset 0 -20px 40px rgba(255,80,0,0.25); }
-  to   { box-shadow: inset 0 -20px 60px rgba(255,120,0,0.50); }
+  from {
+    box-shadow: inset 0 -20px 40px rgba(255, 80, 0, 0.25);
+  }
+  to {
+    box-shadow: inset 0 -20px 60px rgba(255, 120, 0, 0.5);
+  }
 }
 @keyframes thunder-flash {
-  0%,88%,100% { background-color: transparent; }
-  90%         { background-color: rgba(255,245,100,0.06); }
-  92%         { background-color: transparent; }
-  94%         { background-color: rgba(255,245,100,0.04); }
+  0%,
+  88%,
+  100% {
+    background-color: transparent;
+  }
+  90% {
+    background-color: rgba(255, 245, 100, 0.06);
+  }
+  92% {
+    background-color: transparent;
+  }
+  94% {
+    background-color: rgba(255, 245, 100, 0.04);
+  }
 }
 @keyframes lightning-bolt {
-  0%,88%,100% { opacity: 0; }
-  90%         { opacity: 1; }
-  92%         { opacity: 0; }
-  94%         { opacity: 0.6; }
-  96%         { opacity: 0; }
+  0%,
+  88%,
+  100% {
+    opacity: 0;
+  }
+  90% {
+    opacity: 1;
+  }
+  92% {
+    opacity: 0;
+  }
+  94% {
+    opacity: 0.6;
+  }
+  96% {
+    opacity: 0;
+  }
 }
 @keyframes crystal-shimmer {
-  0%,100% { filter: brightness(1) saturate(1); }
-  50%     { filter: brightness(1.1) saturate(1.3); }
+  0%,
+  100% {
+    filter: brightness(1) saturate(1);
+  }
+  50% {
+    filter: brightness(1.1) saturate(1.3);
+  }
 }
 @keyframes crystal-glare {
-  0%     { background-position: 200% 0; opacity: 0; }
-  20%    { opacity: 1; }
-  50%    { background-position: -50% 0; opacity: 0.8; }
-  80%,100% { background-position: -200% 0; opacity: 0; }
+  0% {
+    background-position: 200% 0;
+    opacity: 0;
+  }
+  20% {
+    opacity: 1;
+  }
+  50% {
+    background-position: -50% 0;
+    opacity: 0.8;
+  }
+  80%,
+  100% {
+    background-position: -200% 0;
+    opacity: 0;
+  }
 }
 @keyframes cosmos-twinkle {
-  0%,100% { filter: brightness(1); }
-  50%     { filter: brightness(1.25) saturate(1.2); }
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.25) saturate(1.2);
+  }
 }
 
 /* ── 派手な新フレーム用 ── */
 @keyframes neon-flicker {
-  0%,19%,21%,23%,100% { opacity: 1; }
-  20%,22%             { opacity: 0.6; }
+  0%,
+  19%,
+  21%,
+  23%,
+  100% {
+    opacity: 1;
+  }
+  20%,
+  22% {
+    opacity: 0.6;
+  }
 }
 @keyframes fire-frame {
-  from { box-shadow: 0 0 6px #ff7700, 0 0 18px #ff3300, 0 0 40px #ff0000, 0 0 8px rgba(255,120,0,0.3) inset; }
-  to   { box-shadow: 0 0 10px #ffaa00, 0 0 30px #ff5500, 0 0 60px #ff2200, 0 0 12px rgba(255,160,0,0.5) inset; }
+  from {
+    box-shadow:
+      0 0 6px #ff7700,
+      0 0 18px #ff3300,
+      0 0 40px #ff0000,
+      0 0 8px rgba(255, 120, 0, 0.3) inset;
+  }
+  to {
+    box-shadow:
+      0 0 10px #ffaa00,
+      0 0 30px #ff5500,
+      0 0 60px #ff2200,
+      0 0 12px rgba(255, 160, 0, 0.5) inset;
+  }
 }
 @keyframes electric-zap {
-  0%,100% { box-shadow: 0 0 4px #ffe000, 0 0 14px #44aaff, 0 0 32px #ffe000, 0 0 5px rgba(255,230,0,0.4) inset; }
-  25%     { box-shadow: 0 0 8px #ffffff, 0 0 20px #88ccff, 0 0 40px #ffe000, 0 0 8px rgba(255,255,255,0.6) inset; }
-  75%     { box-shadow: 0 0 2px #ffe000, 0 0 8px #2288ff, 0 0 20px #ffcc00, 0 0 3px rgba(255,230,0,0.2) inset; }
+  0%,
+  100% {
+    box-shadow:
+      0 0 4px #ffe000,
+      0 0 14px #44aaff,
+      0 0 32px #ffe000,
+      0 0 5px rgba(255, 230, 0, 0.4) inset;
+  }
+  25% {
+    box-shadow:
+      0 0 8px #ffffff,
+      0 0 20px #88ccff,
+      0 0 40px #ffe000,
+      0 0 8px rgba(255, 255, 255, 0.6) inset;
+  }
+  75% {
+    box-shadow:
+      0 0 2px #ffe000,
+      0 0 8px #2288ff,
+      0 0 20px #ffcc00,
+      0 0 3px rgba(255, 230, 0, 0.2) inset;
+  }
 }
 @keyframes holo-spin {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 @keyframes legendary-aura {
-  0%,100% {
-    box-shadow: 0 0 8px #ffd700, 0 0 22px #ffaa00, 0 0 50px #ff8800, 0 0 10px rgba(255,215,0,0.4) inset;
+  0%,
+  100% {
+    box-shadow:
+      0 0 8px #ffd700,
+      0 0 22px #ffaa00,
+      0 0 50px #ff8800,
+      0 0 10px rgba(255, 215, 0, 0.4) inset;
     border-color: #ffd700;
   }
   50% {
-    box-shadow: 0 0 14px #fff8a0, 0 0 36px #ffcc00, 0 0 80px #ffaa00, 0 0 16px rgba(255,240,100,0.6) inset;
+    box-shadow:
+      0 0 14px #fff8a0,
+      0 0 36px #ffcc00,
+      0 0 80px #ffaa00,
+      0 0 16px rgba(255, 240, 100, 0.6) inset;
     border-color: #fff8a0;
   }
 }
 @keyframes legendary-stars {
-  from { text-shadow: 0 0 8px #ffd700, 0 0 16px #ffaa00; letter-spacing: 2px; }
-  to   { text-shadow: 0 0 14px #fff8a0, 0 0 28px #ffd700; letter-spacing: 4px; }
+  from {
+    text-shadow:
+      0 0 8px #ffd700,
+      0 0 16px #ffaa00;
+    letter-spacing: 2px;
+  }
+  to {
+    text-shadow:
+      0 0 14px #fff8a0,
+      0 0 28px #ffd700;
+    letter-spacing: 4px;
+  }
 }
 
 /* ===================================================
@@ -2936,8 +3235,13 @@ body,
   margin-bottom: 10px;
   font-size: 0.85rem;
 }
-.deco-shop__pool-label { color: var(--text-sub); }
-.deco-shop__pool-val   { font-weight: 700; color: #ffd700; }
+.deco-shop__pool-label {
+  color: var(--text-sub);
+}
+.deco-shop__pool-val {
+  font-weight: 700;
+  color: #ffd700;
+}
 
 .deco-shop__tabs {
   display: flex;
@@ -2953,7 +3257,9 @@ body,
   color: var(--text-sub);
   font-size: 0.78rem;
   cursor: pointer;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 .deco-shop__tab.active {
   background: var(--accent);
@@ -2997,8 +3303,15 @@ body,
   border-color: #6bcb77;
 }
 
-.deco-shop__item-emoji { font-size: 1.8rem; line-height: 1; }
-.deco-shop__item-name  { font-size: 0.78rem; color: var(--text); font-weight: 600; }
+.deco-shop__item-emoji {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+.deco-shop__item-name {
+  font-size: 0.78rem;
+  color: var(--text);
+  font-weight: 600;
+}
 
 .deco-shop__item-badges {
   display: flex;
@@ -3068,4 +3381,168 @@ body,
   border-radius: 6px;
   padding: 2px 8px;
   font-size: 0.78rem;
+}
+
+/* ===== Evolution Animation ===== */
+.evolution-animation {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.evolution-animation__container {
+  position: relative;
+  width: 200px;
+  height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.evolution-animation__sprite {
+  width: 120px;
+  height: 120px;
+  object-fit: contain;
+  filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.3));
+}
+
+/* Phase 1: Shake */
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-5px);
+  }
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+.shake {
+  animation: shake 0.1s infinite;
+}
+
+/* Phase 2: Silhouette */
+.silhouette {
+  filter: brightness(0) invert(1) drop-shadow(0 0 20px rgba(255, 255, 255, 0.8));
+  transition: opacity 0.1s;
+}
+
+.silhouette.visible {
+  opacity: 1;
+}
+
+.silhouette.hidden {
+  opacity: 0;
+}
+
+/* Phase 3: Flash */
+.flash {
+  filter: brightness(2) contrast(2) drop-shadow(0 0 30px rgba(255, 255, 255, 1));
+  transition: all 0.3s;
+}
+
+/* Phase 4: Bounce */
+@keyframes bounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.bounce {
+  animation: bounce 0.6s ease-out;
+}
+
+/* ===== Evolution Dialog ===== */
+.evolution-dialog {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 2px solid var(--accent);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  color: var(--text);
+}
+
+.evolution-dialog__message {
+  font-size: 16px;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.evolution-dialog__question {
+  font-size: 14px;
+  margin-bottom: 16px;
+  color: var(--text-sub);
+}
+
+.evolution-dialog__buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.evolution-dialog__button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.evolution-dialog__button--yes {
+  background: var(--accent);
+  color: white;
+}
+
+.evolution-dialog__button--yes:hover {
+  background: #d94550;
+}
+
+.evolution-dialog__button--no {
+  background: var(--bg-card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.evolution-dialog__button--no:hover {
+  background: var(--bg-card2);
+}
+
+.evolution-dialog__button--ok {
+  background: var(--accent);
+  color: white;
+  min-width: 80px;
+}
+
+.evolution-dialog__button--ok:hover {
+  background: #d94550;
 }

@@ -34,7 +34,9 @@ export { getStreakMultiplier };
 const STORAGE_KEY = "pokemon_lifelog_state";
 
 // ===== フック本体 =====
-export function usePokemonEngine() {
+export function usePokemonEngine(
+  onEvolutionAnimation?: (fromPokemonId: number, toPokemonId: number) => void,
+) {
   const [state, setState] = useState<GameState>(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
@@ -201,7 +203,11 @@ export function usePokemonEngine() {
               ) {
                 newCaught = addCaught(newCaught, evolved.pokemonId);
                 if (wasEgg) newHatches++;
-                else newEvolutions++;
+                else {
+                  newEvolutions++;
+                  // 進化アニメーションをトリガー（孵化は対象外）
+                  onEvolutionAnimation?.(prevId!, evolved.pokemonId);
+                }
               }
               return evolved;
             });
@@ -438,7 +444,11 @@ export function usePokemonEngine() {
           ) {
             newCaught = addCaught(newCaught, evolved.pokemonId);
             if (wasEgg) newHatches++;
-            else newEvolutions++;
+            else {
+              newEvolutions++;
+              // 進化アニメーションをトリガー（孵化は対象外）
+              onEvolutionAnimation?.(prevId!, evolved.pokemonId);
+            }
           }
           return evolved;
         });

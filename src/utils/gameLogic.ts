@@ -145,6 +145,13 @@ export function migrateState(raw: unknown): GameState {
           : 0,
       decoration: slot.decoration ?? makeEmptyDecoration(),
     }));
+    // 解放済みスロットで pokemonId=null のままのスロットをタマゴに変換
+    const unlockedCount = calcUnlockedSlots(merged.totalTp ?? 0);
+    merged.party = merged.party.map((slot, i) =>
+      i < unlockedCount && slot.pokemonId === null && !slot.isEgg
+        ? makeEmptySlot(i, true)
+        : slot,
+    );
   }
   return merged;
 }

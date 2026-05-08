@@ -24,6 +24,7 @@ import type { Move } from "../services/pokeApiService";
 import { DecorationShop } from "./DecorationShop";
 import { DECORATION_CATALOG } from "../data/decorationCatalog";
 import type { DecorationCategory } from "../types";
+import { EvolutionAnimation } from "./EvolutionAnimation";
 
 type CardMode = "normal" | "chat" | "dex" | "deco";
 
@@ -108,6 +109,11 @@ interface Props {
     itemId: string,
     category: DecorationCategory,
   ) => void;
+  evolutionAnimation?: {
+    fromPokemonId: number;
+    toPokemonId: number;
+  } | null;
+  onCloseEvolutionAnimation: () => void;
 }
 
 const ATTRS: AttributeType[] = ["physical", "smart", "mental", "life"];
@@ -151,18 +157,18 @@ function PokemonCard({
   const [mode, setMode] = useState<CardMode>("normal");
   const [showAllocate, setShowAllocate] = useState(false);
 
-  // 孵化・進化を検出して鳴き声を再生
+  // 孵化を検出して鳴き声を再生（進化はEvolutionAnimationで再生）
   const prevPokemonIdRef = useRef<number | null | undefined>(slot.pokemonId);
   useEffect(() => {
     const prev = prevPokemonIdRef.current;
     const curr = slot.pokemonId;
-    if (curr && curr !== 0 && curr !== prev) {
+    if (curr && curr !== 0 && prev === 0) {
       playPokemonCry(curr);
     }
     prevPokemonIdRef.current = curr;
   }, [slot.pokemonId]);
 
-  const isEgg = slot.isEgg || slot.pokemonId === 0;
+  const isEgg = slot.isEgg || slot.pokemonId === 0 || slot.pokemonId === null;
   const name = isEgg ? "タマゴ" : getPokemonName(slot.pokemonId ?? 0);
   const totalDp = ATTRS.reduce((s, k) => s + slot.dp[k], 0);
   const maxDp = Math.max(totalDp, 100);
@@ -203,7 +209,11 @@ function PokemonCard({
                 aria-hidden="true"
               >
                 {acc.spriteUrl ? (
-                  <img src={acc.spriteUrl} alt={acc.name} className="pokemon-card__acc-sprite" />
+                  <img
+                    src={acc.spriteUrl}
+                    alt={acc.name}
+                    className="pokemon-card__acc-sprite"
+                  />
                 ) : (
                   acc.emoji
                 )}
@@ -508,6 +518,8 @@ export function PartyView({
   onPurchaseDecoration,
   onApplyDecoration,
   onRemoveDecoration,
+  evolutionAnimation,
+  onCloseEvolutionAnimation,
 }: Props) {
   const { party, unlockedSlots, totalTp } = state;
   const unlockedParty = party.slice(0, unlockedSlots);
@@ -523,7 +535,7 @@ export function PartyView({
     <div className="party-view">
       <div className="party-nav">
         {unlockedParty.map((s, i) => {
-          const isEgg = s.isEgg || s.pokemonId === 0;
+          const isEgg = s.isEgg || s.pokemonId === 0 || s.pokemonId === null;
           const isSelected = i === safeIndex;
           return (
             <button
@@ -581,6 +593,15 @@ export function PartyView({
           }
           onConfirm={(moveToForgot) => onForgetMove?.(moveToForgot)}
           onCancel={() => onCancelPendingMove?.()}
+        />
+      )}
+
+      {evolutionAnimation && (
+        <EvolutionAnimation
+          fromPokemonId={evolutionAnimation.fromPokemonId}
+          toPokemonId={evolutionAnimation.toPokemonId}
+          onComplete={onCloseEvolutionAnimation}
+          onCancel={onCloseEvolutionAnimation}
         />
       )}
     </div>
