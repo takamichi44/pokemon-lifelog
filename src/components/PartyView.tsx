@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type {
   GameState,
   PokemonSlot,
@@ -17,6 +17,7 @@ import { PokemonChat } from "./PokemonChat";
 import { PokemonDex } from "./PokemonDex";
 import { MoveSelectionModal } from "./MoveSelectionModal";
 import { animatedSpriteUrl, onSpriteError } from "../utils/spriteUrl";
+import { playPokemonCry } from "../utils/pokemonCry";
 import { calcLevel } from "../utils/levelSystem";
 import { getMovesByPokemonId } from "../services/pokeApiService";
 import type { Move } from "../services/pokeApiService";
@@ -149,6 +150,17 @@ function PokemonCard({
 }) {
   const [mode, setMode] = useState<CardMode>("normal");
   const [showAllocate, setShowAllocate] = useState(false);
+
+  // 孵化・進化を検出して鳴き声を再生
+  const prevPokemonIdRef = useRef<number | null | undefined>(slot.pokemonId);
+  useEffect(() => {
+    const prev = prevPokemonIdRef.current;
+    const curr = slot.pokemonId;
+    if (curr && curr !== 0 && curr !== prev) {
+      playPokemonCry(curr);
+    }
+    prevPokemonIdRef.current = curr;
+  }, [slot.pokemonId]);
 
   const isEgg = slot.isEgg || slot.pokemonId === 0;
   const name = isEgg ? "タマゴ" : getPokemonName(slot.pokemonId ?? 0);

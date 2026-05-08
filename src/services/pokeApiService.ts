@@ -40,11 +40,19 @@ export const TYPE_COLORS: Record<string, string> = {
   フェアリー: "#e98ec6",
 };
 
+export interface AbilityData {
+  nameJa: string;
+  flavorJa: string;
+  isHidden: boolean;
+}
+
 export interface PokeData {
   types: string[];
   height: number; // dm
   weight: number; // hg
   flavorText: string;
+  genus: string;        // "たねポケモン" 等
+  abilities: AbilityData[];
 }
 
 export interface Move {
@@ -53,6 +61,36 @@ export interface Move {
 }
 
 const cache = new Map<number, PokeData>();
+const abilityCache = new Map<string, { nameJa: string; flavorJa: string }>();
+
+async function getAbilityJa(slug: string, url: string): Promise<{ nameJa: string; flavorJa: string }> {
+  if (abilityCache.has(slug)) return abilityCache.get(slug)!;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const names = data.names as Array<{ language: { name: string }; name: string }>;
+    const nameEntry = names.find((n) => n.language.name === "ja")
+      ?? names.find((n) => n.language.name === "ja-Hrkt");
+    const nameJa = nameEntry?.name ?? slug;
+
+    const flavors = data.flavor_text_entries as Array<{
+      flavor_text: string;
+      language: { name: string };
+    }>;
+    const flavorEntry = flavors.find((f) => f.language.name === "ja")
+      ?? flavors.find((f) => f.language.name === "ja-Hrkt");
+    const flavorJa = flavorEntry?.flavor_text.replace(/[\n\f\r]/g, "").trim() ?? "";
+
+    const result = { nameJa, flavorJa };
+    abilityCache.set(slug, result);
+    return result;
+  } catch {
+    const result = { nameJa: slug, flavorJa: "" };
+    abilityCache.set(slug, result);
+    return result;
+  }
+}
 const movesCache = new Map<number, Move[]>();
 const moveNameJaCache = new Map<string, string>(); // english slug → Japanese name
 
@@ -107,11 +145,34 @@ export async function getPokeData(id: number): Promise<PokeData> {
       ? jaEntries[0].flavor_text.replace(/[\n\f\r]/g, "").trim()
       : "";
 
+  // 分類（genus）
+  const generaEntries = species.genera as Array<{
+    genus: string;
+    language: { name: string };
+  }>;
+  const genusEntry = generaEntries.find((g) => g.language.name === "ja")
+    ?? generaEntries.find((g) => g.language.name === "ja-Hrkt");
+  const genus = genusEntry?.genus ?? "";
+
+  // 特性（abilities）
+  const abilitySlots = pokemon.abilities as Array<{
+    ability: { name: string; url: string };
+    is_hidden: boolean;
+  }>;
+  const abilities = await Promise.all(
+    abilitySlots.map(async ({ ability, is_hidden }) => {
+      const { nameJa, flavorJa } = await getAbilityJa(ability.name, ability.url);
+      return { nameJa, flavorJa, isHidden: is_hidden };
+    }),
+  );
+
   const data: PokeData = {
     types,
     height: pokemon.height,
     weight: pokemon.weight,
     flavorText,
+    genus,
+    abilities,
   };
   cache.set(id, data);
   return data;

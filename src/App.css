@@ -1177,6 +1177,54 @@ body,
   border-radius: 8px;
   padding: 10px 12px;
 }
+.pokemon-dex__genus {
+  font-size: 12px;
+  color: var(--text-sub);
+  font-weight: normal;
+  margin-left: 4px;
+}
+.pokemon-dex__abilities {
+  margin-top: 4px;
+}
+.pokemon-dex__abilities-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-sub);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.pokemon-dex__ability {
+  background: var(--bg-card2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 6px;
+}
+.pokemon-dex__ability--hidden {
+  border-left: 3px solid #a855f7;
+}
+.pokemon-dex__ability-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.pokemon-dex__ability-hidden-badge {
+  font-size: 10px;
+  background: #a855f7;
+  color: #fff;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-weight: normal;
+}
+.pokemon-dex__ability-flavor {
+  font-size: 12px;
+  color: var(--text-sub);
+  line-height: 1.6;
+  margin: 4px 0 0;
+}
 
 /* ===== Pokedex View（専用タブ画面） ===== */
 .pokedex-view {

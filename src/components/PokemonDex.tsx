@@ -26,7 +26,12 @@ export function PokemonDex({ pokemonId }: Props) {
 
   return (
     <div className="pokemon-dex">
-      <div className="pokemon-dex__title">No.{pokemonId} {name}</div>
+      <div className="pokemon-dex__title">
+        No.{pokemonId} {name}
+        {data?.genus && (
+          <span className="pokemon-dex__genus">（{data.genus}）</span>
+        )}
+      </div>
 
       {loading && (
         <div className="pokemon-dex__loading">
@@ -68,6 +73,29 @@ export function PokemonDex({ pokemonId }: Props) {
           {/* 図鑑説明 */}
           {data.flavorText && (
             <p className="pokemon-dex__flavor">{data.flavorText}</p>
+          )}
+
+          {/* 特性 */}
+          {data.abilities.length > 0 && (
+            <div className="pokemon-dex__abilities">
+              <div className="pokemon-dex__abilities-title">特性</div>
+              {data.abilities.map((ab, i) => (
+                <div
+                  key={i}
+                  className={`pokemon-dex__ability${ab.isHidden ? ' pokemon-dex__ability--hidden' : ''}`}
+                >
+                  <span className="pokemon-dex__ability-name">
+                    {ab.nameJa}
+                    {ab.isHidden && (
+                      <span className="pokemon-dex__ability-hidden-badge">隠れ特性</span>
+                    )}
+                  </span>
+                  {ab.flavorJa && (
+                    <p className="pokemon-dex__ability-flavor">{ab.flavorJa}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </>
       )}

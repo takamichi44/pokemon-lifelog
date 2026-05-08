@@ -1,12 +1,26 @@
-import { useState, useRef, useEffect } from 'react';
-import type { PokemonSlot, AttributeType, ActivityCategory, GameState } from '../types';
-import { ATTRIBUTE_COLORS, ATTRIBUTE_LABELS, CATEGORY_LABELS, CATEGORY_COEFFICIENTS } from '../types';
-import { getPokemonName } from '../data/pokemonNames';
-import { classifyActivity, respondToActivity, respondToConversation } from '../services/geminiService';
-import { animatedSpriteUrl, onSpriteError } from '../utils/spriteUrl';
-import { getStreakMultiplier } from '../hooks/usePokemonEngine';
-import { getChallengeDefinition } from '../data/weeklyChallenges';
-import { MoveSelectionModal } from './MoveSelectionModal';
+import { useState, useRef, useEffect } from "react";
+import type {
+  PokemonSlot,
+  AttributeType,
+  ActivityCategory,
+  GameState,
+} from "../types";
+import {
+  ATTRIBUTE_COLORS,
+  ATTRIBUTE_LABELS,
+  CATEGORY_LABELS,
+  CATEGORY_COEFFICIENTS,
+} from "../types";
+import { getPokemonName } from "../data/pokemonNames";
+import {
+  classifyActivity,
+  respondToActivity,
+  respondToConversation,
+} from "../services/geminiService";
+import { animatedSpriteUrl, onSpriteError } from "../utils/spriteUrl";
+import { playPokemonCry } from "../utils/pokemonCry";
+import { getStreakMultiplier } from "../hooks/usePokemonEngine";
+import { getChallengeDefinition } from "../data/weeklyChallenges";
 
 interface Props {
   slot: PokemonSlot;
@@ -20,26 +34,24 @@ interface Props {
     isConversation?: boolean,
   ) => void;
   onClaimReward: () => void;
-  onForgetMove?: (moveToForgot: string) => void;
-  onCancelPendingMove?: () => void;
 }
 
-const ATTRS: AttributeType[] = ['physical', 'smart', 'mental', 'life'];
-const CAT_KEYS: ActivityCategory[] = ['effort', 'daily'];
+const ATTRS: AttributeType[] = ["physical", "smart", "mental", "life"];
+const CAT_KEYS: ActivityCategory[] = ["effort", "daily"];
 
 // AIオフのときのテンプレート返答
 const TEMPLATES: Record<ActivityCategory, string[]> = {
   effort: [
-    'すごい！ぼくとっても嬉しいよ！次も絶対できるよ！',
-    'わあ、えらい！トレーナーならできるって思ってた！',
-    'かっこいい！ぼくも応援してるから、もっとやれるよ！',
-    'すごいすごい！一緒に頑張ろう！',
+    "すごい！ぼくとっても嬉しいよ！次も絶対できるよ！",
+    "わあ、えらい！トレーナーならできるって思ってた！",
+    "かっこいい！ぼくも応援してるから、もっとやれるよ！",
+    "すごいすごい！一緒に頑張ろう！",
   ],
   daily: [
-    '毎日こつこつって、すごく大事なことだよ。えらいね。',
-    '今日もお疲れさま！ゆっくり休んでね。',
-    'こういう積み重ねが大切なんだってぼく知ってるよ！',
-    '毎日ちゃんとやってて、ぼく感動してるよ。',
+    "毎日こつこつって、すごく大事なことだよ。えらいね。",
+    "今日もお疲れさま！ゆっくり休んでね。",
+    "こういう積み重ねが大切なんだってぼく知ってるよ！",
+    "毎日ちゃんとやってて、ぼく感動してるよ。",
   ],
 };
 
@@ -50,18 +62,23 @@ function getTemplate(cat: ActivityCategory): string {
 
 function getTodayStr() {
   const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForgetMove, onCancelPendingMove }: Props) {
+export function PokemonChat({
+  slot,
+  state,
+  onAddActivity,
+  onClaimReward,
+}: Props) {
   const isEgg = slot.isEgg || slot.pokemonId === 0;
-  const name = isEgg ? 'タマゴ' : getPokemonName(slot.pokemonId ?? 0);
+  const name = isEgg ? "タマゴ" : getPokemonName(slot.pokemonId ?? 0);
 
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [toPool, setToPool] = useState(false);
   const [useAi, setUseAi] = useState(true);
-  const [attribute, setAttribute] = useState<AttributeType>('physical');
-  const [category, setCategory] = useState<ActivityCategory>('effort');
+  const [attribute, setAttribute] = useState<AttributeType>("physical");
+  const [category, setCategory] = useState<ActivityCategory>("effort");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -75,10 +92,10 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
   const streak = state.effortStreak ?? 0;
   const multiplier = getStreakMultiplier(streak);
   const todayStr = getTodayStr();
-  const isFirstToday = (state.lastEffortDate ?? '') !== todayStr;
+  const isFirstToday = (state.lastEffortDate ?? "") !== todayStr;
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [state.chatHistory.length]);
 
   async function handleSend() {
@@ -96,15 +113,16 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
         const result = await classifyActivity(text);
 
         // 雑談判定：DP付与せずポケモンが返答するだけ
-        if (result.type === 'conversation') {
+        if (result.type === "conversation") {
           if (!isEgg && slot.pokemonId) {
             response = await respondToConversation(slot, text);
+            playPokemonCry(slot.pokemonId);
           } else {
-            response = '🥚 ……（タマゴがかすかに揺れている）';
+            response = "🥚 ……（タマゴがかすかに揺れている）";
           }
-          // チャット履歴に「会話」として追加（DP/TPなし）
-          onAddActivity(text, 'life', 'daily', null, response, true);
-          setInput('');
+          // チャット履歴に「会話」として追加（DP/TPなし）。対象スロットを紐付ける。
+          onAddActivity(text, "life", "daily", slot.slotId, response, true);
+          setInput("");
           inputRef.current?.focus();
           return;
         }
@@ -114,25 +132,32 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
 
         if (!isEgg && slot.pokemonId) {
           response = await respondToActivity(slot, text, finalAttr, finalCat);
+          playPokemonCry(slot.pokemonId);
         } else {
-          response = '🥚 ……（タマゴが温かく震えている）';
+          response = "🥚 ……（タマゴが温かく震えている）";
         }
       } else {
         response = getTemplate(finalCat);
       }
 
-      onAddActivity(text, finalAttr, finalCat, toPool ? null : slot.slotId, response);
-      setInput('');
+      onAddActivity(
+        text,
+        finalAttr,
+        finalCat,
+        toPool ? null : slot.slotId,
+        response,
+      );
+      setInput("");
       inputRef.current?.focus();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'エラーが発生しました');
+      setError(e instanceof Error ? e.message : "エラーが発生しました");
     } finally {
       setLoading(false);
     }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
@@ -140,10 +165,13 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
 
   // 週間チャレンジバー
   const challenge = state.weeklyChallenge ?? null;
-  const challengeDef = challenge ? getChallengeDefinition(challenge.challengeTypeIndex) : null;
-  const challengePct = challenge && challengeDef
-    ? Math.min((challenge.current / challengeDef.target) * 100, 100)
-    : 0;
+  const challengeDef = challenge
+    ? getChallengeDefinition(challenge.challengeTypeIndex)
+    : null;
+  const challengePct =
+    challenge && challengeDef
+      ? Math.min((challenge.current / challengeDef.target) * 100, 100)
+      : 0;
   const canClaim = challenge?.completed && !challenge.rewardClaimed;
 
   return (
@@ -156,7 +184,9 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
           <span className="pokemon-chat__streak-days">{streak}</span>
           <span className="pokemon-chat__streak-label">日連続</span>
           {multiplier > 1.0 && (
-            <span className="pokemon-chat__streak-mult">×{multiplier.toFixed(1)}</span>
+            <span className="pokemon-chat__streak-mult">
+              ×{multiplier.toFixed(1)}
+            </span>
           )}
           {isFirstToday && streak > 0 && (
             <span className="pokemon-chat__streak-bonus">今日最初 +30%</span>
@@ -166,24 +196,34 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
         {/* チャレンジ */}
         {challenge && challengeDef && (
           <div className="pokemon-chat__challenge">
-            <span className="pokemon-chat__challenge-icon">{challengeDef.icon}</span>
+            <span className="pokemon-chat__challenge-icon">
+              {challengeDef.icon}
+            </span>
             <div className="pokemon-chat__challenge-track">
               <div
                 className="pokemon-chat__challenge-fill"
-                style={{ width: `${challengePct}%`, background: challenge.completed ? '#22c55e' : undefined }}
+                style={{
+                  width: `${challengePct}%`,
+                  background: challenge.completed ? "#22c55e" : undefined,
+                }}
               />
             </div>
             <span className="pokemon-chat__challenge-num">
               {challenge.current}/{challengeDef.target}
             </span>
             {canClaim ? (
-              <button className="pokemon-chat__challenge-claim" onClick={onClaimReward}>
+              <button
+                className="pokemon-chat__challenge-claim"
+                onClick={onClaimReward}
+              >
                 🎁 {challengeDef.rewardDp}DP
               </button>
             ) : challenge.rewardClaimed ? (
               <span className="pokemon-chat__challenge-done">✅</span>
             ) : (
-              <span className="pokemon-chat__challenge-reward">+{challengeDef.rewardDp}DP</span>
+              <span className="pokemon-chat__challenge-reward">
+                +{challengeDef.rewardDp}DP
+              </span>
             )}
           </div>
         )}
@@ -205,7 +245,7 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
             <span className="pokemon-chat__speaker">{name}</span>
             <div className="pokemon-chat__text">
               {isEgg
-                ? '🥚 ……（タマゴがかすかに動いている）'
+                ? "🥚 ……（タマゴがかすかに動いている）"
                 : `やあ、トレーナー！ぼく${name}だよ。今日何をしたか話してみて！`}
             </div>
           </div>
@@ -221,8 +261,12 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
                 <span style={{ color: ATTRIBUTE_COLORS[act.attribute] }}>
                   {ATTRIBUTE_LABELS[act.attribute]}
                 </span>
-                <span className="pokemon-chat__cat">{CATEGORY_LABELS[act.category]}</span>
-                <span className="pokemon-chat__dp">+{act.earnedDp.toFixed(1)} DP</span>
+                <span className="pokemon-chat__cat">
+                  {CATEGORY_LABELS[act.category]}
+                </span>
+                <span className="pokemon-chat__dp">
+                  +{act.earnedDp.toFixed(1)} DP
+                </span>
               </div>
             </div>
 
@@ -239,7 +283,9 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
                 )}
                 <div className="pokemon-chat__bubble-body">
                   <span className="pokemon-chat__speaker">{name}</span>
-                  <div className="pokemon-chat__text">{act.pokemonResponse}</div>
+                  <div className="pokemon-chat__text">
+                    {act.pokemonResponse}
+                  </div>
                 </div>
               </div>
             )}
@@ -260,7 +306,9 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
             <div className="pokemon-chat__bubble-body">
               <span className="pokemon-chat__speaker">{name}</span>
               <div className="pokemon-chat__thinking">
-                <span /><span /><span />
+                <span />
+                <span />
+                <span />
               </div>
             </div>
           </div>
@@ -269,20 +317,6 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
         {error && <div className="pokemon-chat__error">⚠️ {error}</div>}
         <div ref={bottomRef} />
       </div>
-
-      {/* ===== 技習得モーダル ===== */}
-      {state.pendingMove && state.pendingMoveSlotId !== null && (
-        <MoveSelectionModal
-          newMove={state.pendingMove}
-          currentMoves={state.party.find((s) => s.slotId === state.pendingMoveSlotId)?.learnedMoves ?? []}
-          onConfirm={(moveToForgot) => {
-            onForgetMove?.(moveToForgot);
-          }}
-          onCancel={() => {
-            onCancelPendingMove?.();
-          }}
-        />
-      )}
 
       {/* ===== 入力フォーム ===== */}
       <div className="pokemon-chat__form">
@@ -304,13 +338,17 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
                 onChange={(e) => setAttribute(e.target.value as AttributeType)}
               >
                 {ATTRS.map((a) => (
-                  <option key={a} value={a}>{ATTRIBUTE_LABELS[a]}</option>
+                  <option key={a} value={a}>
+                    {ATTRIBUTE_LABELS[a]}
+                  </option>
                 ))}
               </select>
               <select
                 className="pokemon-chat__select"
                 value={category}
-                onChange={(e) => setCategory(e.target.value as ActivityCategory)}
+                onChange={(e) =>
+                  setCategory(e.target.value as ActivityCategory)
+                }
               >
                 {CAT_KEYS.map((c) => (
                   <option key={c} value={c}>
@@ -336,7 +374,11 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
             ref={inputRef}
             className="pokemon-chat__input"
             rows={2}
-            placeholder={isEgg ? 'タマゴに話しかける… (Enter送信)' : `${name}に話しかける… (Enter送信)`}
+            placeholder={
+              isEgg
+                ? "タマゴに話しかける… (Enter送信)"
+                : `${name}に話しかける… (Enter送信)`
+            }
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
@@ -347,16 +389,17 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
             onClick={handleSend}
             disabled={loading || !input.trim()}
           >
-            {loading ? '⏳' : '送信'}
+            {loading ? "⏳" : "送信"}
           </button>
         </div>
 
         {/* ボーナス表示 */}
         {(multiplier > 1.0 || isFirstToday) && (
           <div className="pokemon-chat__bonus-hint">
-            {multiplier > 1.0 && `🔥 ${streak}日ストリーク ×${multiplier.toFixed(1)}`}
-            {multiplier > 1.0 && isFirstToday && ' + '}
-            {isFirstToday && '✨ 今日最初の努力 +30%'}
+            {multiplier > 1.0 &&
+              `🔥 ${streak}日ストリーク ×${multiplier.toFixed(1)}`}
+            {multiplier > 1.0 && isFirstToday && " + "}
+            {isFirstToday && "✨ 今日最初の努力 +30%"}
           </div>
         )}
       </div>
