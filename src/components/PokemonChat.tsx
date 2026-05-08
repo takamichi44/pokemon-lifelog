@@ -102,8 +102,14 @@ export function PokemonChat({ slot, state, onAddActivity, onClaimReward, onForge
           } else {
             response = '🥚 ……（タマゴがかすかに揺れている）';
           }
-            // チャット履歴に「会話」として追加（DP/TPなし）
-            onAddActivity(text, 'life', 'daily', null, response, true);
+          // チャット履歴に「会話」として追加（DP/TPなし）
+          onAddActivity(text, 'life', 'daily', null, response, true);
+          setInput('');
+          inputRef.current?.focus();
+          return;
+        }
+
+        finalAttr = result.attribute;
         finalCat = result.category;
 
         if (!isEgg && slot.pokemonId) {

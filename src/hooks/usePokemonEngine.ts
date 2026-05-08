@@ -484,11 +484,12 @@ export function usePokemonEngine() {
       });
 
       // 技習得チェック（DP報酬獲得後）
-      if (!isConversationActivity && targetSlotId !== null && earned > 0) {
+      if (!isConversationActivity && targetSlotId !== null) {
         await checkAndLearnMoves(targetSlotId);
       }
     },
-    [checkAndLearnMoves],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
 
   const allocateFromPool = useCallback(
@@ -708,7 +709,7 @@ export function usePokemonEngine() {
         if (slot.slotId !== prev.pendingMoveSlotId) return slot;
         const newMoves = slot.learnedMoves
           .filter((m) => m !== moveToForgot)
-          .concat([prev.pendingMove]);
+          .concat([prev.pendingMove!]);
         return { ...slot, learnedMoves: newMoves };
       });
 

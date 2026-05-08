@@ -303,6 +303,8 @@ export function PartyView({
   onAllocate,
   onAddActivity,
   onClaimReward,
+  onForgetMove,
+  onCancelPendingMove,
 }: Props) {
   const { party, unlockedSlots, totalTp } = state;
   const unlockedParty = party.slice(0, unlockedSlots);
