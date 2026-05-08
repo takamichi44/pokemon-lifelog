@@ -134,8 +134,8 @@ export function TrainerView({ state, onReset, onDecayRateChange, onClaimReward, 
         </div>
       </section>
 
-      {/* 開発者モード */}
-      <section className="trainer-section">
+      {/* 開発者モード（開発環境のみ表示） */}
+      {import.meta.env.VITE_DEV_PANEL === 'true' && <section className="trainer-section">
         <div className="trainer-section__title">
           <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
             <input
@@ -189,7 +189,7 @@ export function TrainerView({ state, onReset, onDecayRateChange, onClaimReward, 
             </button>
           </div>
         )}
-      </section>
+      </section>}
 
       {/* リセット */}
       <section className="trainer-section">

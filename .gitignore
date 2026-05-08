@@ -14,8 +14,11 @@ dist-ssr
 
 # API keys – never commit
 .env
-.env.*
-!.env.example
+.env.local
+.env.*.local
+# 非シークレットな環境設定はコミット対象
+!.env.production
+!.env.development
 
 # Editor directories and files
 .vscode/*
