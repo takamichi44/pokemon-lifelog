@@ -8,6 +8,7 @@ import type {
 } from "../types";
 import { BASE_DP_PER_ACTIVITY, CATEGORY_COEFFICIENTS } from "../types";
 import { getChallengeDefinition } from "../data/weeklyChallenges";
+import { getBadgeById } from "../data/badges";
 import { useMoveSystem } from "./useMoveSystem";
 import {
   getStreakMultiplier,
@@ -220,6 +221,21 @@ export function usePokemonEngine() {
         };
         const newBadges = checkBadges(prev, badgeCheck);
 
+        // バッジ解放時のDP報酬をプールに配分
+        for (const badgeId of newBadges) {
+          const badgeDef = getBadgeById(badgeId);
+          if (badgeDef?.rewardDp) {
+            const perAttr = badgeDef.rewardDp / 4;
+            newPool = {
+              ...newPool,
+              physical: newPool.physical + perAttr,
+              smart: newPool.smart + perAttr,
+              mental: newPool.mental + perAttr,
+              life: newPool.life + perAttr,
+            };
+          }
+        }
+
         return {
           ...prev,
           party: newParty.map((slot, i) =>
@@ -299,9 +315,25 @@ export function usePokemonEngine() {
         };
         const newBadges = checkBadges(prev, badgeCheck);
 
+        // バッジ解放時のDP報酬をプールに配分
+        let badgeRewardPool = newPool;
+        for (const badgeId of newBadges) {
+          const badgeDef = getBadgeById(badgeId);
+          if (badgeDef?.rewardDp) {
+            const perAttr = badgeDef.rewardDp / 4;
+            badgeRewardPool = {
+              ...badgeRewardPool,
+              physical: badgeRewardPool.physical + perAttr,
+              smart: badgeRewardPool.smart + perAttr,
+              mental: badgeRewardPool.mental + perAttr,
+              life: badgeRewardPool.life + perAttr,
+            };
+          }
+        }
+
         return {
           ...prev,
-          dpPool: newPool,
+          dpPool: badgeRewardPool,
           party: newParty,
           caughtPokemon: newCaught,
           totalHatches: newHatches,
