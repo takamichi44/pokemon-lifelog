@@ -2723,6 +2723,32 @@ body,
   top: 8px; right: 30px;
   animation: sparkle-anim 1.5s ease-in-out infinite;
 }
+/* PokeAPI スプライトアイテム用の位置クラス */
+.pokemon-card__acc--scarf   { bottom: 4px; left: 50%; transform: translateX(-50%); }
+.pokemon-card__acc--gem     { top: 6px; left: 10px; }
+.pokemon-card__acc--collect { bottom: 6px; right: 10px; }
+/* カード上のスプライト画像サイズ */
+.pokemon-card__acc-sprite {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+/* ショップグリッド内のスプライト画像 */
+.deco-shop__item-sprite {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+/* 現在の装備プレビュー内のスプライト画像 */
+.deco-shop__current-sprite {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  vertical-align: middle;
+}
 
 /* ===================================================
    デコレーション — キーフレーム
