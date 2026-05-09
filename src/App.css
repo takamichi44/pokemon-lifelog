@@ -287,15 +287,15 @@ body,
 
 .party-nav {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 4px;
 }
 
 .party-nav__icon {
   background: var(--bg-card);
   border: 2px solid transparent;
-  border-radius: 12px;
-  padding: 4px;
+  border-radius: 10px;
+  padding: 3px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -3570,7 +3570,9 @@ body,
   height: 8px;
   border-radius: 50%;
   background: var(--border);
-  transition: background 0.3s, transform 0.3s;
+  transition:
+    background 0.3s,
+    transform 0.3s;
 }
 
 .onboarding__step-dot--active {
@@ -3604,13 +3606,24 @@ body,
 }
 
 @keyframes egg-bounce {
-  0%, 100% { transform: translateY(0); }
-  50%       { transform: translateY(-12px); }
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
 }
 
 @keyframes trophy-appear {
-  from { transform: scale(0.5); opacity: 0; }
-  to   { transform: scale(1);   opacity: 1; }
+  from {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .onboarding__title {
@@ -3698,7 +3711,9 @@ body,
   cursor: pointer;
   background: var(--accent);
   color: #fff;
-  transition: opacity 0.2s, transform 0.1s;
+  transition:
+    opacity 0.2s,
+    transform 0.1s;
   min-width: 120px;
 }
 

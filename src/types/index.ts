@@ -7,8 +7,8 @@ export interface DecorationItem {
   id: string;
   category: DecorationCategory;
   name: string;
-  emoji?: string;      // 絵文字アクセサリー
-  spriteUrl?: string;  // PokeAPI スプライト画像URL
+  emoji?: string; // 絵文字アクセサリー
+  spriteUrl?: string; // PokeAPI スプライト画像URL
   cost: number;
   cssClass: string; // カードに付与するCSSクラス
 }
@@ -131,7 +131,7 @@ export const CATEGORY_COEFFICIENTS: Record<ActivityCategory, number> = {
 export const BASE_DP_PER_ACTIVITY = 10;
 export const HATCH_THRESHOLD = 50;
 export const TP_SLOT_THRESHOLDS = [0, 100, 300, 600, 1000, 1500];
-export const DEFAULT_DECAY_RATE = 0.2;
+export const DEFAULT_DECAY_RATE = 0;
 
 export const HATCH_POOL: number[] = [
   172,
