@@ -4,8 +4,11 @@ import { PartyView } from "./components/PartyView";
 import { PokedexView } from "./components/PokedexView";
 import { TrainerView } from "./components/TrainerView";
 import { BottomNav, type TabId } from "./components/BottomNav";
+import { Onboarding } from "./components/Onboarding";
 import type { AttributeType, ActivityCategory } from "./types";
 import "./App.css";
+
+const ONBOARDING_KEY = "pokemon_lifelog_v1_onboarded";
 
 export default function App() {
   const {
@@ -25,11 +28,24 @@ export default function App() {
   } = usePokemonEngine((fromPokemonId, toPokemonId) => {
     setEvolutionAnimation({ fromPokemonId, toPokemonId });
   });
+  const [onboarded, setOnboarded] = useState(() => {
+    return localStorage.getItem(ONBOARDING_KEY) === "true";
+  });
   const [tab, setTab] = useState<TabId>("party");
   const [evolutionAnimation, setEvolutionAnimation] = useState<{
     fromPokemonId: number;
     toPokemonId: number;
   } | null>(null);
+
+  function handleOnboardingComplete(trainerName: string) {
+    setTrainerName(trainerName);
+    localStorage.setItem(ONBOARDING_KEY, "true");
+    setOnboarded(true);
+  }
+
+  if (!onboarded) {
+    return <Onboarding onComplete={handleOnboardingComplete} />;
+  }
 
   const hasPoolDp = Object.values(state.dpPool).some((v) => v > 0);
 
