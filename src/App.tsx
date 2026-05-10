@@ -38,6 +38,12 @@ export default function App() {
     toPokemonId: number;
   } | null>(null);
 
+  function handleReset() {
+    resetGame();
+    localStorage.removeItem(ONBOARDING_KEY);
+    setOnboarded(false);
+  }
+
   function handleOnboardingComplete(trainerName: string, starterPokemonId: number) {
     setTrainerName(trainerName);
     setStarterPokemon(starterPokemonId);
@@ -98,7 +104,7 @@ export default function App() {
         {tab === "trainer" && (
           <TrainerView
             state={state}
-            onReset={resetGame}
+            onReset={handleReset}
             onDecayRateChange={setDecayRate}
             onNameChange={setTrainerName}
             onClaimReward={claimChallengeReward}
