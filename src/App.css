@@ -3844,10 +3844,12 @@ body,
   position: absolute;
   height: 210px;
   width: auto;
-  /* スプライトシートの中央の全身部分を表示 */
-  left: -85px;
+  /* 1408x768px画像、表示高210px→幅385px換算、全身は左から約110-195px付近 */
+  left: -88px;
   top: 0;
   image-rendering: pixelated;
+  /* グリッド白背景を除去 */
+  mix-blend-mode: multiply;
 }
 
 .prof-dialog {
