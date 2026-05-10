@@ -386,6 +386,22 @@ export function usePokemonEngine(
     setState((prev) => ({ ...prev, trainerName: name }));
   }, []);
 
+  const setStarterPokemon = useCallback((pokemonId: number) => {
+    setState((prev) => {
+      const newParty = prev.party.map((slot) =>
+        slot.slotId === 0
+          ? { ...slot, pokemonId, isEgg: false, lastUpdatedAt: Date.now() }
+          : slot,
+      );
+      return {
+        ...prev,
+        party: newParty,
+        caughtPokemon: addCaught(prev.caughtPokemon ?? [], pokemonId),
+        totalHatches: (prev.totalHatches ?? 0) + 1,
+      };
+    });
+  }, []);
+
   /** 開発者モード: 任意DPを直接付与 */
   const grantDp = useCallback(
     async (
@@ -596,6 +612,7 @@ export function usePokemonEngine(
     resetGame,
     setDecayRate,
     setTrainerName,
+    setStarterPokemon,
     grantDp,
     checkAndLearnMoves,
     forgetMove,

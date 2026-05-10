@@ -19,6 +19,7 @@ export default function App() {
     resetGame,
     setDecayRate,
     setTrainerName,
+    setStarterPokemon,
     grantDp,
     forgetMove,
     cancelPendingMove,
@@ -37,8 +38,9 @@ export default function App() {
     toPokemonId: number;
   } | null>(null);
 
-  function handleOnboardingComplete(trainerName: string) {
+  function handleOnboardingComplete(trainerName: string, starterPokemonId: number) {
     setTrainerName(trainerName);
+    setStarterPokemon(starterPokemonId);
     localStorage.setItem(ONBOARDING_KEY, "true");
     setOnboarded(true);
   }

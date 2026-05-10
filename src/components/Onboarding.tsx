@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { animatedSpriteUrl, onSpriteError } from "../utils/spriteUrl";
+import { getPokemonName } from "../data/pokemonNames";
 
 interface Props {
-  onComplete: (trainerName: string) => void;
+  onComplete: (trainerName: string, starterPokemonId: number) => void;
 }
 
 const ATTRIBUTES = [
@@ -42,19 +44,30 @@ const ATTRIBUTES = [
   },
 ];
 
+const STARTERS = [
+  { id: 1,   gen: "I" },
+  { id: 4,   gen: "I" },
+  { id: 7,   gen: "I" },
+  { id: 152, gen: "II" },
+  { id: 155, gen: "II" },
+  { id: 158, gen: "II" },
+];
+
 export function Onboarding({ onComplete }: Props) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState("");
+  const [selectedStarter, setSelectedStarter] = useState<number | null>(null);
 
   function handleComplete() {
-    onComplete(name.trim() || "トレーナー");
+    if (selectedStarter === null) return;
+    onComplete(name.trim() || "トレーナー", selectedStarter);
   }
 
   return (
     <div className="onboarding">
       {/* ステップインジケーター */}
       <div className="onboarding__steps">
-        {[1, 2, 3].map((s) => (
+        {[1, 2, 3, 4].map((s) => (
           <div
             key={s}
             className={`onboarding__step-dot ${s === step ? "onboarding__step-dot--active" : ""} ${s < step ? "onboarding__step-dot--done" : ""}`}
@@ -98,10 +111,7 @@ export function Onboarding({ onComplete }: Props) {
               >
                 <div className="onboarding__attr-header">
                   <span className="onboarding__attr-emoji">{attr.emoji}</span>
-                  <span
-                    className="onboarding__attr-label"
-                    style={{ color: attr.color }}
-                  >
+                  <span className="onboarding__attr-label" style={{ color: attr.color }}>
                     {attr.label}
                   </span>
                 </div>
@@ -141,15 +151,51 @@ export function Onboarding({ onComplete }: Props) {
             onChange={(e) => setName(e.target.value)}
             maxLength={10}
             autoFocus
-            onKeyDown={(e) => e.key === "Enter" && handleComplete()}
+            onKeyDown={(e) => e.key === "Enter" && setStep(4)}
           />
           <div className="onboarding__nav">
             <button className="onboarding__btn onboarding__btn--ghost" onClick={() => setStep(2)}>
               ← もどる
             </button>
+            <button className="onboarding__btn" onClick={() => setStep(4)}>
+              つぎへ →
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 画面4: 御三家選択 */}
+      {step === 4 && (
+        <div className="onboarding__content">
+          <h2 className="onboarding__title">最初の1匹を選ぼう！</h2>
+          <p className="onboarding__desc">
+            タマゴがすぐに孵化します
+          </p>
+          <div className="onboarding__starters">
+            {STARTERS.map(({ id }) => (
+              <button
+                key={id}
+                className={`onboarding__starter ${selectedStarter === id ? "onboarding__starter--selected" : ""}`}
+                onClick={() => setSelectedStarter(id)}
+              >
+                <img
+                  src={animatedSpriteUrl(id)}
+                  alt={getPokemonName(id)}
+                  className="onboarding__starter-sprite"
+                  onError={(e) => onSpriteError(e, id)}
+                />
+                <span className="onboarding__starter-name">{getPokemonName(id)}</span>
+              </button>
+            ))}
+          </div>
+          <div className="onboarding__nav">
+            <button className="onboarding__btn onboarding__btn--ghost" onClick={() => setStep(3)}>
+              ← もどる
+            </button>
             <button
               className="onboarding__btn onboarding__btn--primary"
               onClick={handleComplete}
+              disabled={selectedStarter === null}
             >
               冒険を始める！
             </button>

@@ -3768,3 +3768,57 @@ body,
 .onboarding__input::placeholder {
   color: var(--text-sub);
 }
+
+/* ===== Onboarding: 御三家選択 ===== */
+.onboarding__starters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.onboarding__starter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 6px;
+  background: var(--bg-card);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.1s, background 0.2s;
+}
+
+.onboarding__starter:hover {
+  border-color: var(--text-sub);
+}
+
+.onboarding__starter:active {
+  transform: scale(0.95);
+}
+
+.onboarding__starter--selected {
+  border-color: var(--accent);
+  background: var(--bg-card2);
+  box-shadow: 0 0 10px rgba(233, 69, 96, 0.35);
+}
+
+.onboarding__starter-sprite {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+
+.onboarding__starter-name {
+  font-size: 12px;
+  color: var(--text);
+  font-weight: bold;
+  text-align: center;
+}
+
+.onboarding__btn--primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
