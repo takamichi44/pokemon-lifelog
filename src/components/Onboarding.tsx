@@ -45,13 +45,72 @@ const ATTRIBUTES = [
 ];
 
 const STARTERS = [
-  { id: 1,   gen: "I" },
-  { id: 4,   gen: "I" },
-  { id: 7,   gen: "I" },
-  { id: 152, gen: "II" },
-  { id: 155, gen: "II" },
-  { id: 158, gen: "II" },
+  { id: 1 },
+  { id: 4 },
+  { id: 7 },
+  { id: 152 },
+  { id: 155 },
+  { id: 158 },
 ];
+
+// ミチバ博士のセリフ
+const DIALOGS = [
+  // 画面1
+  [
+    "やあやあ！よく来てくれたのう。",
+    "わしはミチバ博士じゃ。ポケモンライフログの世界へようこそ！",
+    "このアプリではのう、毎日の活動を記録することで、ポケモンたちが育っていくのじゃ。",
+  ],
+  // 画面2
+  [
+    "活動にはそれぞれ「属性」があってのう。",
+    "フィジカル・スマート・メンタル・ライフの4種類じゃ。",
+    "どの属性を鍛えるかによって、ポケモンの育ち方や進化先が変わってくるぞ！",
+  ],
+  // 画面3
+  [
+    "さて……君の名前を聞かせてくれるかのう？",
+    "ポケモンたちは、君のことをその名で呼ぶようになるじゃろう。",
+  ],
+  // 画面4
+  [
+    "最後に、最初のパートナーを選んでもらおう！",
+    "タマゴからすぐに孵化して、君の旅を共に歩んでくれるぞ！",
+    "さあ、どの子と一緒に成長したいかのう？",
+  ],
+];
+
+function ProfessorDialog({
+  lines,
+  children,
+}: {
+  lines: string[];
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="prof-wrap">
+      <div className="prof-sprite-wrap">
+        <img
+          src={`${import.meta.env.BASE_URL}dr-michiba.png`}
+          alt="ミチバ博士"
+          className="prof-sprite"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = "none";
+          }}
+        />
+      </div>
+      <div className="prof-dialog">
+        <div className="prof-dialog__name">ミチバ博士</div>
+        <div className="prof-dialog__body">
+          {lines.map((line, i) => (
+            <p key={i}>{line}</p>
+          ))}
+        </div>
+      </div>
+      {children}
+    </div>
+  );
+}
 
 export function Onboarding({ onComplete }: Props) {
   const [step, setStep] = useState(1);
@@ -78,17 +137,7 @@ export function Onboarding({ onComplete }: Props) {
       {/* 画面1: 世界観 */}
       {step === 1 && (
         <div className="onboarding__content">
-          <div className="onboarding__egg">🥚</div>
-          <h2 className="onboarding__title">ポケモンライフログ</h2>
-          <p className="onboarding__desc">
-            今日やったことを記録すると、<br />
-            ポケモンが育ちます。
-          </p>
-          <p className="onboarding__subdesc">
-            運動・勉強・人との会話・食事…<br />
-            毎日の行動がポケモンの力になります。<br />
-            タマゴを孵化させて、一緒に成長しよう！
-          </p>
+          <ProfessorDialog lines={DIALOGS[0]} />
           <button className="onboarding__btn" onClick={() => setStep(2)}>
             つぎへ →
           </button>
@@ -98,10 +147,7 @@ export function Onboarding({ onComplete }: Props) {
       {/* 画面2: 4属性の説明 */}
       {step === 2 && (
         <div className="onboarding__content">
-          <h2 className="onboarding__title">4つの属性</h2>
-          <p className="onboarding__desc">
-            活動の内容によって伸びる属性が変わります
-          </p>
+          <ProfessorDialog lines={DIALOGS[1]} />
           <div className="onboarding__attrs">
             {ATTRIBUTES.map((attr) => (
               <div
@@ -137,12 +183,7 @@ export function Onboarding({ onComplete }: Props) {
       {/* 画面3: トレーナー名入力 */}
       {step === 3 && (
         <div className="onboarding__content">
-          <div className="onboarding__egg onboarding__egg--trophy">🏆</div>
-          <h2 className="onboarding__title">トレーナー名は？</h2>
-          <p className="onboarding__desc">
-            ポケモンがあなたを呼ぶときの名前です<br />
-            <span className="onboarding__subdesc-inline">（あとから変更できます）</span>
-          </p>
+          <ProfessorDialog lines={DIALOGS[2]} />
           <input
             className="onboarding__input"
             type="text"
@@ -153,6 +194,7 @@ export function Onboarding({ onComplete }: Props) {
             autoFocus
             onKeyDown={(e) => e.key === "Enter" && setStep(4)}
           />
+          <p className="onboarding__subdesc">（あとから変更できます）</p>
           <div className="onboarding__nav">
             <button className="onboarding__btn onboarding__btn--ghost" onClick={() => setStep(2)}>
               ← もどる
@@ -167,10 +209,7 @@ export function Onboarding({ onComplete }: Props) {
       {/* 画面4: 御三家選択 */}
       {step === 4 && (
         <div className="onboarding__content">
-          <h2 className="onboarding__title">最初の1匹を選ぼう！</h2>
-          <p className="onboarding__desc">
-            タマゴがすぐに孵化します
-          </p>
+          <ProfessorDialog lines={DIALOGS[3]} />
           <div className="onboarding__starters">
             {STARTERS.map(({ id }) => (
               <button

@@ -3822,3 +3822,60 @@ body,
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* ===== Professor dialog (Onboarding) ===== */
+.prof-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  width: 100%;
+}
+
+.prof-sprite-wrap {
+  width: 130px;
+  height: 210px;
+  overflow: hidden;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.prof-sprite {
+  position: absolute;
+  height: 210px;
+  width: auto;
+  /* スプライトシートの中央の全身部分を表示 */
+  left: -85px;
+  top: 0;
+  image-rendering: pixelated;
+}
+
+.prof-dialog {
+  width: 100%;
+  background: var(--bg-card);
+  border: 3px solid #e0c870;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.prof-dialog__name {
+  background: #e0c870;
+  color: #1a1a2e;
+  font-size: 13px;
+  font-weight: bold;
+  padding: 3px 12px;
+}
+
+.prof-dialog__body {
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.prof-dialog__body p {
+  font-size: 13px;
+  color: var(--text);
+  line-height: 1.6;
+  margin: 0;
+}
