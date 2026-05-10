@@ -3838,6 +3838,8 @@ body,
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
+  background: #f5f0e8;
+  border-radius: 10px 10px 0 0;
 }
 
 .prof-sprite {
@@ -3848,8 +3850,6 @@ body,
   left: -88px;
   top: 0;
   image-rendering: pixelated;
-  /* グリッド白背景を除去 */
-  mix-blend-mode: multiply;
 }
 
 .prof-dialog {
