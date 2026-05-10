@@ -827,6 +827,177 @@ body,
   color: var(--text-sub);
 }
 
+.trainer-michiba-card {
+  background: linear-gradient(
+    180deg,
+    rgba(56, 189, 248, 0.12),
+    rgba(59, 130, 246, 0.08)
+  );
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  border-radius: 18px;
+  padding: 20px;
+}
+
+.trainer-michiba-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.trainer-michiba-card__title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.trainer-michiba-card__desc {
+  font-size: 13px;
+  color: var(--text-sub);
+  line-height: 1.6;
+}
+
+.trainer-michiba-card__button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.trainer-michiba-card__button:hover {
+  background: #1d4ed8;
+}
+
+.trainer-michiba-chat {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.trainer-michiba-chat__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.trainer-michiba-chat__back {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.trainer-michiba-chat__title {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.trainer-michiba-chat__info {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  background: var(--bg-card);
+  border-radius: 18px;
+  padding: 16px;
+}
+
+.trainer-michiba-chat__avatar {
+  width: 128px;
+  height: 128px;
+  border-radius: 24px;
+  object-fit: contain;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+
+.trainer-michiba-chat__text {
+  color: var(--text-sub);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.trainer-michiba-chat__history {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.trainer-michiba-chat__bubble {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 86%;
+}
+
+.trainer-michiba-chat__bubble--user {
+  align-self: flex-end;
+}
+
+.trainer-michiba-chat__bubble--model {
+  align-self: flex-start;
+}
+
+.trainer-michiba-chat__bubble-text {
+  background: var(--bg-card2);
+  border-radius: 16px;
+  padding: 12px 14px;
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.trainer-michiba-chat__bubble--user .trainer-michiba-chat__bubble-text {
+  background: var(--accent);
+  color: white;
+}
+
+.trainer-michiba-chat__error {
+  color: #ef4444;
+  font-size: 13px;
+}
+
+.trainer-michiba-chat__input-row {
+  display: grid;
+  gap: 10px;
+}
+
+.trainer-michiba-chat__input {
+  width: 100%;
+  min-height: 96px;
+  resize: vertical;
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.trainer-michiba-chat__send {
+  align-self: flex-end;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.trainer-michiba-chat__send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 /* 会話ボタン */
 .pokemon-card__chat-btn {
   background: var(--bg-card2);
@@ -3787,7 +3958,10 @@ body,
   border: 2px solid var(--border);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: border-color 0.2s, transform 0.1s, background 0.2s;
+  transition:
+    border-color 0.2s,
+    transform 0.1s,
+    background 0.2s;
 }
 
 .onboarding__starter:hover {
@@ -3846,8 +4020,8 @@ body,
   position: absolute;
   height: 210px;
   width: auto;
-  /* 1408x768px画像、表示高210px→幅385px換算、全身は左から約110-195px付近 */
-  left: -88px;
+  left: 50%;
+  transform: translateX(-50%);
   top: 0;
   image-rendering: pixelated;
 }

@@ -112,7 +112,8 @@ function extractJsonFromGemini(rawText: string): string | null {
   // コードフェンス（```json ... ``` / ``` ... ```）を除去してから探す
   const fenceMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
   // フェンスが不完全な場合でも rawText 全体から { を探す
-  const content = fenceMatch?.[1]?.trim() ?? rawText.replace(/```(?:json)?/gi, "").trim();
+  const content =
+    fenceMatch?.[1]?.trim() ?? rawText.replace(/```(?:json)?/gi, "").trim();
 
   const start = content.indexOf("{");
   if (start < 0) return null;
@@ -384,5 +385,37 @@ export async function chatWithPokemon(
   return callGemini({
     contents,
     generationConfig: { temperature: 0.95, maxOutputTokens: 200 },
+  });
+}
+
+function buildMichibaSystemPrompt(trainerName = "トレーナー"): string {
+  return `あなたはミチバ博士です。ユーザーは${trainerName}という名前のトレーナーです。このアプリ「ポケモンライフログ」の機能、ルール、使い方、DP/TP、進化、バッジ、チャット、パーティ管理などについて深く理解したうえで答えてください。アプリの仕様に関する質問には、博士として正確で丁寧に説明します。
+
+もし質問がこのアプリの内容以外であれば、博士らしいユーモアや親しみやすい言い回しを交えつつ答えてください。回答は日本語で、わかりやすくシンプルに書き、必要に応じて「このアプリでは…」という形でコンテキストを出してください。`;
+}
+
+export async function chatWithMichiba(
+  history: ChatMessage[],
+  userMessage: string,
+  trainerName = "トレーナー",
+): Promise<string> {
+  const systemPrompt = buildMichibaSystemPrompt(trainerName);
+
+  const contents = [
+    { role: "user", parts: [{ text: systemPrompt }] },
+    {
+      role: "model",
+      parts: [{ text: "はい、ミチバ博士としてお答えします。" }],
+    },
+    ...history.map((m) => ({
+      role: m.role,
+      parts: [{ text: m.text }],
+    })),
+    { role: "user", parts: [{ text: userMessage }] },
+  ];
+
+  return callGemini({
+    contents,
+    generationConfig: { temperature: 0.7, maxOutputTokens: 240 },
   });
 }

@@ -12,14 +12,22 @@ const ATTRIBUTES = [
     emoji: "💪",
     label: "フィジカル",
     color: "#ef4444",
-    examples: ["ジム・筋トレ・スポーツ", "ランニング・ウォーキング", "ストレッチ・ヨガ"],
+    examples: [
+      "ジム・筋トレ・スポーツ",
+      "ランニング・ウォーキング",
+      "ストレッチ・ヨガ",
+    ],
   },
   {
     key: "smart",
     emoji: "📚",
     label: "スマート",
     color: "#3b82f6",
-    examples: ["勉強・読書・語学", "仕事・プログラミング", "資格学習・セミナー"],
+    examples: [
+      "勉強・読書・語学",
+      "仕事・プログラミング",
+      "資格学習・セミナー",
+    ],
   },
   {
     key: "mental",
@@ -157,7 +165,10 @@ export function Onboarding({ onComplete }: Props) {
               >
                 <div className="onboarding__attr-header">
                   <span className="onboarding__attr-emoji">{attr.emoji}</span>
-                  <span className="onboarding__attr-label" style={{ color: attr.color }}>
+                  <span
+                    className="onboarding__attr-label"
+                    style={{ color: attr.color }}
+                  >
                     {attr.label}
                   </span>
                 </div>
@@ -170,7 +181,10 @@ export function Onboarding({ onComplete }: Props) {
             ))}
           </div>
           <div className="onboarding__nav">
-            <button className="onboarding__btn onboarding__btn--ghost" onClick={() => setStep(1)}>
+            <button
+              className="onboarding__btn onboarding__btn--ghost"
+              onClick={() => setStep(1)}
+            >
               ← もどる
             </button>
             <button className="onboarding__btn" onClick={() => setStep(3)}>
@@ -196,7 +210,10 @@ export function Onboarding({ onComplete }: Props) {
           />
           <p className="onboarding__subdesc">（あとから変更できます）</p>
           <div className="onboarding__nav">
-            <button className="onboarding__btn onboarding__btn--ghost" onClick={() => setStep(2)}>
+            <button
+              className="onboarding__btn onboarding__btn--ghost"
+              onClick={() => setStep(2)}
+            >
               ← もどる
             </button>
             <button className="onboarding__btn" onClick={() => setStep(4)}>
@@ -223,12 +240,17 @@ export function Onboarding({ onComplete }: Props) {
                   className="onboarding__starter-sprite"
                   onError={(e) => onSpriteError(e, id)}
                 />
-                <span className="onboarding__starter-name">{getPokemonName(id)}</span>
+                <span className="onboarding__starter-name">
+                  {getPokemonName(id)}
+                </span>
               </button>
             ))}
           </div>
           <div className="onboarding__nav">
-            <button className="onboarding__btn onboarding__btn--ghost" onClick={() => setStep(3)}>
+            <button
+              className="onboarding__btn onboarding__btn--ghost"
+              onClick={() => setStep(3)}
+            >
               ← もどる
             </button>
             <button
